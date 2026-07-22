@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Print OIDC claims
-        uses: github/actions-oidc-debugger@v1
+        uses: github/actions-oidc-debugger-action@v1
+
       - name: Azure login
         uses: azure/login@v3
         with:
