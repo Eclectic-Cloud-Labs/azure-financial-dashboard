@@ -10,6 +10,8 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Print OIDC claims
+        uses: github/actions-oidc-debugger@v1
       - name: Azure login
         uses: azure/login@v3
         with:
