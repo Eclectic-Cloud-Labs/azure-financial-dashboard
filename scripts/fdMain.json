@@ -1,6 +1,6 @@
 {
     "name": "Github-Deploy-Main",
-    "issuer": "https://token.actions.githubusercontent.com/",
+    "issuer": "https://token.actions.githubusercontent.com",
     "subject": "repo:Eclectic-Cloud-Labs@284486509/azure-financial-dashboard@1306751650:ref:refs/heads/main",
     "description": "Federated Credential for deploys triggered by pushes to main",
     "audiences": [
