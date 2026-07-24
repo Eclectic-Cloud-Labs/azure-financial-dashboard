@@ -1,7 +1,7 @@
 {
     "name": "Github-Deploy-PR",
-    "issuer": "https://token.actions.githubusercontent.com/",
-    "subject": "repo:Eclectic-Cloud-Labs/azure-financial-dashboard:pull_request",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "repo:Eclectic-Cloud-Labs@284486509/azure-financial-dashboard@1306751650:pull_request",
     "description": "Federated Credential for what if checks triggered by PR's",
     "audiences": [
         "api://AzureADTokenExchange"
