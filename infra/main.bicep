@@ -9,6 +9,19 @@ param budgetAmount int
 param contactEmails string[]
 param startDate string
 
+// storage params
+param storageName string
+param storageLocation string
+
+// KeyVault Params
+param keyVaultName string
+
+// sql server params
+param sqlServerName string 
+param sqlDatabaseName string
+param firewallName string
+param sqlLocation string
+
 
 resource newRG 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: name
@@ -38,6 +51,38 @@ module cost 'modules/Cost/budget.bicep' = {
     startDate: startDate
   }
 }
+
+// Create ADLS Gen2 with Medallion containers
+module storageAccount 'modules/data/storage.bicep' = {
+  name: storageName
+  scope: resourceGroup(newRG.name)
+  params:{
+    storageName: storageName
+    storageLocation: storageLocation
+  }
+
+}
+
+module vault 'modules/security/keyvault.bicep' = {
+  name: keyVaultName
+  scope: resourceGroup(newRG.name)
+  params: {
+    keyVaultName: keyVaultName
+    keyVaultLocation: location
+  }
+}
+
+module sqlServer 'modules/data/sql.bicep' = {
+  name: sqlServerName
+  scope: resourceGroup(newRG.name)
+  params:{
+    sqlServerName: sqlServerName
+    sqlLocation: sqlLocation
+    sqlDatabaseName: sqlDatabaseName
+    firewallName: firewallName
+  }
+}
+
 
 // CLI Deployment CMD (--parameters value depends on prod or dev env)
 // az deployment sub create  --location eastus --template-file "azure-financial-dashboard\infra\main.bicep" --parameters "azure-financial-dashboard\infra\main.dev.bicepparam"
