@@ -22,6 +22,14 @@ param sqlDatabaseName string
 param firewallName string
 param sqlLocation string
 
+// function app params
+param functionAppName string
+param planName string
+param funcStorageName string
+param funcAppLocation string
+param applicationInsightsName string = 'applicationInsights'
+
+
 
 resource newRG 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: name
@@ -31,7 +39,7 @@ resource newRG 'Microsoft.Resources/resourceGroups@2025-04-01' = {
 // Set up Log Analytics in RG
 // (infra\modules\observability\loganalytics.bicep)
 module logAnalytics './modules/observability/loganalytics.bicep' = {
-  name: 'logspace'
+  name: 'gurbosAnalytics'
   scope: resourceGroup(newRG.name)
   params:{
     name: 'gurbosAnalytics'
@@ -83,6 +91,23 @@ module sqlServer 'modules/data/sql.bicep' = {
   }
 }
 
+module functionApp 'modules/compute/functionapp.bicep' = {
+  name: functionAppName
+  scope: resourceGroup(newRG.name)
+  params:{
+    functionAppName: functionAppName
+    planName: planName
+    funcStorageName: funcStorageName
+    location: funcAppLocation
+    storageName: storageName
+    applicationInsightsName: applicationInsightsName
+    logAnalyticsName: logAnalytics.name
+    keyVaultName: vault.name
+  }
+  dependsOn: [
+    storageAccount
+  ]
+}
 
 // CLI Deployment CMD (--parameters value depends on prod or dev env)
 // az deployment sub create  --location eastus --template-file "azure-financial-dashboard\infra\main.bicep" --parameters "azure-financial-dashboard\infra\main.dev.bicepparam"

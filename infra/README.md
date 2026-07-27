@@ -1,0 +1,1 @@
+az keyvault secret set --vault-name gurbosvault --name AlphaVantageAPI --value <api-key>
