@@ -117,7 +117,7 @@ resource roleAssignmentQueueStorage 'Microsoft.Authorization/roleAssignments@202
 
 resource roleAssignmentTableStorage 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(funcStorage.id, functionApp.id,  'Storage Table Data Contributor')
-  scope: dataLakeStorage
+  scope: funcStorage
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')
     principalId: functionApp.identity.principalId

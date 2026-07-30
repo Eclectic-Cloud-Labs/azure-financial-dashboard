@@ -26,9 +26,15 @@ build/
 *.bicepparam.local
 
 # Editor / OS
-.vscode/
+
 .idea/
 .DS_Store
 
 # Local k8s overlays if you keep secrets in them
 deploy/k8s/overlays/**/secrets.yaml
+
+# Azure function app local settings
+local.settings.json
+bin/
+obj/
+.python_packages/

@@ -2,7 +2,7 @@
 React dashboard providing information about public investment markets with Bicep IaC from day one. 
 
 # Status
-- Phase 2 in progress - Setting up environment resources (ADLS Gen2, SQL, Key Vault, data ingestion)
+- Phase 2 in progress - Creating Function App ingestion process to pull from Alpha Vantage API and put raw data into 'bronze' storage container
 
 ## Phase 1
 - Created Entra app registration with service principal (scoped to subscription), 2 federated credentials implemented for 'Pull request' and Deploy for Github Actions OIDC
