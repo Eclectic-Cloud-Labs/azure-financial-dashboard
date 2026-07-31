@@ -83,23 +83,23 @@ resource keyVault 'Microsoft.KeyVault/vaults@2025-05-01' existing = {
 
 // Role Assignments 
 
-// Role for MI to interact with function app background storage for AzWebJobStorage 
-resource roleAssignmentStorageBlobContribFunctionApp 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: funcStorage
-  name: guid(funcStorage.id, functionApp.id, 'Storage Blob Data Contributor')
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
-    principalId: functionApp.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
 // Role so that MI has access to Bronze storage
 resource roleAssignmentBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(dataLakeStorage.id, functionApp.id, 'Storage Blob Data Contributor')
   scope: dataLakeStorage
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') 
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Role for MI to interact with function app background storage for AzWebJobStorage 
+resource roleAssignmentStorageBlobContribFunctionApp 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: funcStorage
+  name: guid(funcStorage.id, functionApp.id, 'Storage Blob Data Contributor')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
     principalId: functionApp.identity.principalId
     principalType: 'ServicePrincipal'
   }
