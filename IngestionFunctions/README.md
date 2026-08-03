@@ -19,3 +19,11 @@ Requires Azure Functions Core Tools. 'local.settings.json' holds local-only conf
 
 ## Dependencies
 See 'requirements.txt' - 'azure-functions', 'azure-identity', 'azure-keyvault-secrets', 'requests'.
+
+
+
+## Deployment troubleshooting log
+- 'func azure functionapp publish' failed - app doesn't support remote build. Tried '--build local'
+- Local build then failed - publish's upload step needs key-based storage auth, but funcStorage had 'allowSharedKeyAccess: True' (matches the zero-key design). Blocked the upload
+- Flipped 'allowSharedKeyAccess: true' on funcStorage only (not the data lake) - pragmatic compromise, func publish doesn't fully support identity-only storage for its own package staging yet
+- Still figuring out: do I need a plain 'AzureWebJobsStorage' connection string alongside the identity-based settings, or does CI/CD deploy (GitHub Actions, azure/functions-action) skip this problem entirely
