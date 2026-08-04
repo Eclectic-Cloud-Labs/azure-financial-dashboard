@@ -15,6 +15,7 @@ param storageLocation string
 
 // KeyVault Params
 param keyVaultName string
+param secretName string
 
 // sql server params
 param sqlServerName string 
@@ -71,15 +72,6 @@ module storageAccount 'modules/data/storage.bicep' = {
 
 }
 
-module vault 'modules/security/keyvault.bicep' = {
-  name: keyVaultName
-  scope: resourceGroup(newRG.name)
-  params: {
-    keyVaultName: keyVaultName
-    keyVaultLocation: location
-  }
-}
-
 module sqlServer 'modules/data/sql.bicep' = {
   name: sqlServerName
   scope: resourceGroup(newRG.name)
@@ -88,6 +80,17 @@ module sqlServer 'modules/data/sql.bicep' = {
     sqlLocation: sqlLocation
     sqlDatabaseName: sqlDatabaseName
     firewallName: firewallName
+  }
+}
+
+module vault 'modules/security/keyvault.bicep' = {
+  name: keyVaultName
+  scope: resourceGroup(newRG.name)
+  params: {
+    keyVaultName: keyVaultName
+    keyVaultLocation: location
+    secretName: secretName
+    funcStorageName: funcStorageName
   }
 }
 
@@ -102,9 +105,11 @@ module functionApp 'modules/compute/functionapp.bicep' = {
     storageName: storageName
     applicationInsightsName: applicationInsightsName
     logAnalyticsName: logAnalytics.name
-    keyVaultName: vault.name
+    keyVaultName: keyVaultName
+    storageConnectionString: vault.outputs.funcStorageConnectionString
   }
   dependsOn: [
+    // ADLS Storage because FunctionApp MI needs access to this from role asg 
     storageAccount
   ]
 }

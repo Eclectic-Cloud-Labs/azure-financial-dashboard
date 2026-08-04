@@ -20,10 +20,14 @@ Requires Azure Functions Core Tools. 'local.settings.json' holds local-only conf
 ## Dependencies
 See 'requirements.txt' - 'azure-functions', 'azure-identity', 'azure-keyvault-secrets', 'requests'.
 
+## Deployment troubleshooting log (resolved)
+- 'func azure functionapp publish' initially failed - app doesn't support remote build on some paths. '--build local' surfaced a deeper issue
+- Local build failed - publish's upload step needed key-based storage auth, but funcStorage had 'allowSharedKeyAccess: false' (matching zero-key design). Blocked the upload
+- Root cause: 'func publish' looks for a plain AzureWebJobsStorage connection-string app setting for its own package-staging step, separate from the app's identity-based runtime auth (which was already correctly configured)
+- Fixed by adding 'AzureWebJobsStorage' as a connection string in the app setting using 'listKeys()' on funcStorage
+- Connection string was directly in the app setting but it now lives as a Key Vault secret (created via Bicep 'listKeys()'), referenced by the app setting with '@Microsoft.KeyVault(SecretUri=...)'. Function App's MI already had Key Vault Secrets User so no new RBAC needed
+- Also hit and fixed: a Bicep circular dependency (functionApp ↔ vault) caused by a role assignment sitting in the wrong module - moved it into functionapp.bicep so the dependency only flows one direction
+- Confirmed working end-to-end: 'func publish' succeeds, 'AlphaVantageIngest' registered and enabled on the deployed Function App
 
-
-## Deployment troubleshooting log
-- 'func azure functionapp publish' failed - app doesn't support remote build. Tried '--build local'
-- Local build then failed - publish's upload step needs key-based storage auth, but funcStorage had 'allowSharedKeyAccess: True' (matches the zero-key design). Blocked the upload
-- Flipped 'allowSharedKeyAccess: true' on funcStorage only (not the data lake) - pragmatic compromise, func publish doesn't fully support identity-only storage for its own package staging yet
-- Still figuring out: do I need a plain 'AzureWebJobsStorage' connection string alongside the identity-based settings, or does CI/CD deploy (GitHub Actions, azure/functions-action) skip this problem entirely
+## Misc
+- Local Python is 3.13, deployed runtime is Python 3.11 (Azure Functions doesn't yet support 3.13 for this consumption plan - checked through the Portal) - publishing the code and 

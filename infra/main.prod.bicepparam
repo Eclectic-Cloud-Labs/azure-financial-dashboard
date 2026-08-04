@@ -16,6 +16,7 @@ param storageLocation = location
 
 // Key Vault
 param keyVaultName = 'gurbosVault'
+param secretName = 'storageConnectionString'
 
 // sql server params
 param sqlServerName = 'gurboSqlServer'
