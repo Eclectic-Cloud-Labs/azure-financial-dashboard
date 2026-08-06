@@ -23,7 +23,7 @@ def upload_blob(secret, credential):
     r = requests.get(url)
     # parse to Json 
     data = json.dumps(r.json())
-    filename = f"AV-{datetime.now().strftime('%Y-%m-%d-%H-%M')}.json"
+    filename = f"AlphaVantage/AV-{datetime.now().strftime('%Y-%m-%d-%H-%M')}.json"
     
     accountUrl = "https://gurbostorage.blob.core.windows.net"
     

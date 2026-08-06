@@ -2,7 +2,8 @@
 Python Azure Function App (v2 model, Linux Consumption) - pulls Alpha Vantage market data into the 'bronze' container of the ADLS Gen2 data lake.
 
 ## What it does
-Timer-triggered daily at '0 0 21 * * *' (~1hr EDT after markets close). Reads Alpha Vantage API key from Key Vault via 'DefaultAzureCredential', calls 'TIME_SERIES_DAILY', writes raw JSON to 'bronze' as one timestamped file per run.
+- [Ingestion File](./function_app.py) ingests API data into 'bronze' and is timer triggered daily at '0 0 21 * * *' (~1hr EDT after markets close). Reads Alpha Vantage API key from Key Vault via 'DefaultAzureCredential', calls 'TIME_SERIES_DAILY', writes raw JSON to 'bronze' as one timestamped file per run.
+- [Transformation file](./bronze_to_silver.py) reads data from 'bronze' container using DefaultAzureCredential. Using a simple if statement and comparing 'last_modified' datetime obj from the list of blobs, the correct blob is consistently being pulled.
 
 ## Auth
 Uses 'DefaultAzureCredential' throughout. No connection strings or keys in code. System assigned MI in Azure. See 'infra/README.md' for the RBAC role assignments granted to the Function App's MI.
@@ -13,6 +14,8 @@ Uses 'DefaultAzureCredential' throughout. No connection strings or keys in code.
 3. 'func new --template "Timer Trigger" --name AlphaVantageIngest' - generated the timer stub
 4. Added 'local.settings.json', 'bin/', 'obj/', '.python_packages/' to '.gitignore'
 5. Set CRON schedule '0 0 21 * * *' for daily post-market-close ingestion
+6. func new --template "Timer Trigger" --name "bronze_to_silver" (for transformation of data)
+7. Created new [shared.py](./shared.py) file to store all recurring variables 
 
 ## Local dev
 Requires Azure Functions Core Tools. 'local.settings.json' holds local-only config (gitignored). 'DefaultAzureCredential' falls back to your 'az login' locally; MI only exists once deployed.
