@@ -7,3 +7,6 @@ azure-identity
 azure-keyvault-secrets
 azure-storage-blob
 requests
+numpy 
+pandas
+pyarrow
