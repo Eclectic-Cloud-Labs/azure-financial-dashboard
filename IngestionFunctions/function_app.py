@@ -9,6 +9,7 @@ app = func.FunctionApp()
 
 # runtime detection
 from bronze_to_silver import bronze_to_silver
+from silver_to_gold import silver_to_gold
 
 # Azure function app sees this and retains when the function is supossed to run based on the schedule
 # Function brings in "credential" to authenticate identity (used to get key vault secret for Alpha vantage API, )

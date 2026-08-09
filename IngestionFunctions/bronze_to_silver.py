@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import io
 from function_app import app
+import pyarrow
 
 bronzeContainer = "bronze"
 silverContainer = "silver"
@@ -14,7 +15,7 @@ accountUrl = "https://gurbostorage.blob.core.windows.net"
 bsc =  BlobServiceClient(credential=credential, account_url=accountUrl)
 
 
-@app.timer_trigger(schedule="0 15 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
+# @app.timer_trigger(schedule="0 15 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
 def bronze_to_silver(myTimer: func.TimerRequest) -> None:
     
     container_client = bsc.get_container_client(container=bronzeContainer)
@@ -40,7 +41,7 @@ def transform(newBlob, newBlob_date, container_client):
     data = json.loads(data) 
     data = data["Time Series (Daily)"]
     df = pd.DataFrame.from_dict(data, orient='index')
-    df.rename(columns={"1. open": "Open", "2. high": "High", "3. low": "Low", "4. close": "Close", "5. volume": "Volume",}, inplace=True)
+    df.rename(columns={"1. open": "open", "2. high": "high", "3. low": "low", "4. close": "close", "5. volume": "volume",}, inplace=True)
     df = df.astype(float)
     df.index = pd.to_datetime(df.index)
     df.index.name = "IBM"
@@ -61,6 +62,6 @@ def sendToSilver(df):
 
 
 
-##FOR LOCAL TESTING##
-# if __name__ == "__main__":
-#     bronze_to_silver(None)
+# FOR LOCAL TESTING##
+if __name__ == "__main__":
+    bronze_to_silver(None)
