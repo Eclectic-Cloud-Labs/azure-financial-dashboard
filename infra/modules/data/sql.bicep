@@ -20,7 +20,7 @@ resource sqlServer 'Microsoft.Sql/servers@2025-01-01' = {
       tenantId: tenant().tenantId
     }
     createMode: 'normal'
-    minimalTlsVersion: '1.3'
+    minimalTlsVersion: '1.2'
     publicNetworkAccess: 'Enabled'
     retentionDays: 7
     version: '12.0'

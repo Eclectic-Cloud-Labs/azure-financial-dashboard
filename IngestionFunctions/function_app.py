@@ -42,3 +42,13 @@ def upload_blob(secret, credential):
 ##FOR LOCAL TESTING##
 # if __name__ == "__main__":
 #     AlphaVantageIngest(None)
+
+
+# publish to azure functionapp so it runs on a timer (based on environment)(need to have timer trigger active not commented out)
+    # func azure functionapp publish gurbosFunctionApp
+    
+# check if functionapp functions have been deployed
+    # az functionapp function list --name gurbosFunctionApp --resource-group rgFindashDev -o table
+    
+# start venv (while in the correct folder in directoryd)
+# source .venv/Scripts/activate

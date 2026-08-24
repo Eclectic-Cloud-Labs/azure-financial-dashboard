@@ -10,3 +10,9 @@ requests
 numpy 
 pandas
 pyarrow
+mssql-python
+fastapi
+pydantic
+python-dotenv
+sqlalchemy
+pyodbc
