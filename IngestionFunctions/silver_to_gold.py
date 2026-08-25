@@ -7,9 +7,10 @@ from io import BytesIO
 import struct
 from sqlalchemy import create_engine
 import pyodbc
+import time
 
 
-# @app.timer_trigger(schedule="0 20 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
+@app.timer_trigger(schedule="0 20 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
 def silver_to_gold(myTimer: func.TimerRequest) -> None:
     credential = DefaultAzureCredential()
     accountUrl = "https://gurbostorage.blob.core.windows.net"
@@ -34,7 +35,6 @@ def read_silver(blobs, silver_container_client):
     for blob in blobs:
         if ".parquet" in blob.name:
             newBlob = blob
-
     data_blob_client = silver_container_client.get_blob_client(blob=newBlob.name)
     df = data_blob_client.download_blob().readall()
     
@@ -90,7 +90,20 @@ def toSql(df, credential):
         conn_str = (
             "Driver={ODBC Driver 18 for SQL Server};Server=gurbosqlserver.database.windows.net;Database=gurboSqlDb;Encrypt=yes;"
         )
-        return pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}, timeout=30)
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            try:
+                print(f"Attempt {attempt+1} to connect to SQL Server")
+                return pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}, timeout=60)
+                
+            except pyodbc.Error as er:
+                if "40613" in str(er):
+                    time.sleep(60)  
+                    continue
+                elif str(er):
+                    raise Exception(str(er))
+        raise Exception(f"Failed to connect after {max_attempts} attempts")
+
 
     # gets the first row from df so i only insert that into the sql table
     # double [[]] so it keep it as a df instead of a series 
@@ -108,5 +121,5 @@ def toSql(df, credential):
 
 
 # FOR LOCAL TESTING##
-if __name__ == "__main__":
-    silver_to_gold(None)
+# if __name__ == "__main__":
+#     silver_to_gold(None)
