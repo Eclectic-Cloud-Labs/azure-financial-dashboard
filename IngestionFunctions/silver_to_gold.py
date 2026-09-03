@@ -112,11 +112,13 @@ def toSql(df, credential):
     df.to_sql("Technical_indicators", con=engine, if_exists="append", index=False)
     print("data sent to sql")
     
-    with get_conn() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Technical_indicators")
-        for row in cursor.fetchall():
-            print(row)
+    
+    ##CHECKS IF SQL DATA IS THERE##
+    # with get_conn() as conn:
+    #     cursor = conn.cursor()
+    #     cursor.execute("SELECT Symbol FROM Technical_indicators")
+    #     for row in cursor.fetchall():
+    #         print(row)
 
 
 
