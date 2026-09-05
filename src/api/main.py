@@ -1,10 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from azure.identity import DefaultAzureCredential
 import struct
 import pyodbc
 import time
-import asyncio
 
+## LOCAL TESTING ##
+# import asyncio
+# asyncio.run(getSymbol("IBM"))
 
 def get_conn():
     SQL_COPT_SS_ACCESS_TOKEN = 1256
@@ -39,14 +41,37 @@ async def root():
         cursor: pyodbc.cursor = conn.cursor()
         cursor.execute("SELECT TOP 1 * FROM Technical_indicators")
         row = cursor.fetchone()
-            
+
         titles = []
         for title in cursor.description:
-            print(title[0])
+            titles.append(title[0])
 
         return dict(zip(titles, row))
 
+@app.get("/market/{symbol}")
+async def getSymbol(symbol: str):
+    with get_conn() as conn:
+        cursor: pyodbc.cursor = conn.cursor()
+        cursor.execute("SELECT TOP 1 * FROM Technical_indicators WHERE Symbol = ?", symbol)
+        row = cursor.fetchone()
+        
+        if row is None:
+            raise HTTPException(status_code=404, detail=f"No data for {symbol}")
 
-## LOCAL TESTING ##
-asyncio.run(root())
+        titles = []
+        for title in cursor.description: 
+            titles.append(title[0])
+        
+        return dict(zip(titles, row))
+            
+
+# @app.get("/market/symbols")
+# async def getAllSymbols(symbol: str):
+#     with get_conn() as conn:
+#         cursor: pyodbc.cursor = conn.cursor()
+#         cursor.execute("SELECT TOP 1 * FROM All_Symbols")
+#         row = cursor.fetchone()
+
+
+
         
