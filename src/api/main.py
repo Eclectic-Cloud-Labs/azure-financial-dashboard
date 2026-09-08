@@ -3,10 +3,19 @@ from azure.identity import DefaultAzureCredential
 import struct
 import pyodbc
 import time
+from fastapi.middleware.cors import CORSMiddleware
 
 ## LOCAL TESTING ##
 # import asyncio
-# asyncio.run(getSymbol("IBM"))
+
+# allows CORS to work (this allows App.tsx to access the API endpoints below locally)
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ["*"],
+    allow_methods = ["*"],
+    allow_headers = ["*"]
+)
 
 def get_conn():
     SQL_COPT_SS_ACCESS_TOKEN = 1256
@@ -33,7 +42,6 @@ def get_conn():
     raise Exception(f"Failed to connect after {max_attempts} attempts")
 
 
-app = FastAPI()
 
 @app.get("/")
 async def root():
@@ -64,6 +72,8 @@ async def getSymbol(symbol: str):
         
         return dict(zip(titles, row))
             
+# for cors 
+
 
 # @app.get("/market/symbols")
 # async def getAllSymbols(symbol: str):
@@ -73,5 +83,5 @@ async def getSymbol(symbol: str):
 #         row = cursor.fetchone()
 
 
-
+# asyncio.run(getSymbol("IBM"))
         

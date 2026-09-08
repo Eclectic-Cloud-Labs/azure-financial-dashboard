@@ -37,6 +37,7 @@ def upload_blob(secret, credential):
     bsc = BlobServiceClient(account_url=accountUrl, credential=credential)
     container_client = bsc.get_container_client(container="bronze")
     container_client.upload_blob(name=filename, data=data)
+    print("Raw Data has been sent to bronze.")
 
 
 ##FOR LOCAL TESTING##
@@ -51,4 +52,4 @@ def upload_blob(secret, credential):
     # az functionapp function list --name gurbosFunctionApp --resource-group rgFindashDev -o table
     
 # start venv (while in the correct folder in directoryd)
-# source .venv/Scripts/activate
+    # source .venv/Scripts/activate

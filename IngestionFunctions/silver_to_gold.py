@@ -113,7 +113,7 @@ def toSql(df, credential):
     print("data sent to sql")
     
     
-    ##CHECKS IF SQL DATA IS THERE##
+    ##CHECKS IF SQL DATA IS THERE ##
     # with get_conn() as conn:
     #     cursor = conn.cursor()
     #     cursor.execute("SELECT Symbol FROM Technical_indicators")

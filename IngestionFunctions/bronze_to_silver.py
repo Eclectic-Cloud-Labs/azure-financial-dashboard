@@ -35,14 +35,14 @@ def bronze_to_silver(myTimer: func.TimerRequest) -> None:
 ##HELPER FUNCTIONS##
 # cleans raw data from Time Series (Daily) key, add new titles, make all applicable values into float types, index/date column turns into real datetime obj's, and returns df for next function to use 
 def transform(newBlob, newBlob_date, container_client):
-    print(newBlob_date)
+    print(f"The last blob update was {newBlob_date}")
     data = container_client.download_blob(newBlob).readall().decode("utf-8")
     data = json.loads(data) 
     data = data["Time Series (Daily)"]
     df = pd.DataFrame.from_dict(data, orient='index')
     df.rename(columns={"1. open": "Symbol_open","2. high": "Symbol_High","3. low": "Symbol_low","4. close": "Symbol_close","5. volume": "Symbol_volume"}, inplace=True)
     df = df.astype(float)
-    df.index = pd.to_datetime(df.index)
+    df.index = pd.to_datetime(df.index, format="%Y-%m-%d")
     df.index.name = "Stock_date"
     return df
 
