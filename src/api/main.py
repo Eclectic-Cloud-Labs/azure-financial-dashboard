@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from azure.identity import DefaultAzureCredential
 import struct
 import pyodbc
 import time
 from fastapi.middleware.cors import CORSMiddleware
+from auth import validate_token
 
 ## LOCAL TESTING ##
 # import asyncio
@@ -25,7 +26,7 @@ def get_conn():
     token_struct = struct.pack(f'<I{len(token_bytes)}s', len(token_bytes), token_bytes)
     
     conn_str = (
-        "Driver={ODBC Driver 18 for SQL Server};Server=gurbosqlserver.database.windows.net;Database=gurboSqlDb;Encrypt=yes;"
+        "Driver={ODBC Driver 18 for SQL Server};Server=gurboSqlServer.database.windows.net;Database=gurboSqlDb;Encrypt=yes;"
     )
     max_attempts = 5
     for attempt in range(max_attempts):
@@ -44,7 +45,7 @@ def get_conn():
 
 
 @app.get("/")
-async def root():
+async def root(user = Depends(validate_token)):
     with get_conn() as conn:
         cursor: pyodbc.cursor = conn.cursor()
         cursor.execute("SELECT TOP 1 * FROM Technical_indicators")
@@ -57,7 +58,7 @@ async def root():
         return dict(zip(titles, row))
 
 @app.get("/market/{symbol}")
-async def getSymbol(symbol: str):
+async def getSymbol(symbol: str, user = Depends(validate_token)):
     with get_conn() as conn:
         cursor: pyodbc.cursor = conn.cursor()
         cursor.execute("SELECT TOP 1 * FROM Technical_indicators WHERE Symbol = ?", symbol)
