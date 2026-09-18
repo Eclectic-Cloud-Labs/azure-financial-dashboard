@@ -51,6 +51,8 @@ See [Requirements](./requirements.txt) - 'azure-functions', 'azure-identity', 'a
   | order by timestamp desc
 ```
 - Root cause: primary-key violation - 'to_sql(if_exists="append")' was resending the full ~100-day history every run, and SQL Server rejects the entire batch on any single duplicate row. Fixed by writing only the newest row each run, matching the actual once-daily cadence
+- **Sept 17 update**
+  - Added difference use cases for the data to flow into sql. First is if there is no data and table existing on the sql db, i add the entire table, otherwise i insert the newest line/date with a clean hanlding of silent failures
 
 ## Misc
 - Local Python is 3.13, deployed runtime is Python 3.11 (Azure Functions doesn't yet support 3.13 for this consumption plan - checked through the Portal). Remote build handles this correctly regardless of local version.

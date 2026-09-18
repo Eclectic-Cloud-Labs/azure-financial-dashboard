@@ -5,12 +5,12 @@ import azure.functions as func
 import pandas as pd
 from io import BytesIO
 import struct
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import pyodbc
 import time
 
 
-@app.timer_trigger(schedule="0 20 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
+# @app.timer_trigger(schedule="0 20 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
 def silver_to_gold(myTimer: func.TimerRequest) -> None:
     credential = DefaultAzureCredential()
     accountUrl = "https://gurbostorage.blob.core.windows.net"
@@ -107,10 +107,23 @@ def toSql(df, credential):
 
     # gets the first row from df so i only insert that into the sql table
     # double [[]] so it keep it as a df instead of a series 
-    df = df.iloc[[0]]
     engine = create_engine("mssql+pyodbc://", creator=get_conn)
-    df.to_sql("Technical_indicators", con=engine, if_exists="append", index=False)
-    print("data sent to sql")
+    # checks if there is data in the sql database and inserts full data if not
+    with engine.connect() as connection:
+        tableExists = connection.execute(text("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'Technical_indicators'")).scalar() > 0 # table existence checker
+        if not tableExists:
+            print("No previous data exists, inserting full table")
+            df.to_sql("Technical_indicators", con=engine, if_exists='append', index=False)
+        else:
+            currentDateExists = connection.execute(text("SELECT COUNT(*) FROM Technical_indicators WHERE Stock_date = :date"), {"date": df.iloc[0]["Stock_date"]}).scalar() > 0 # newest date checker 
+             
+            if currentDateExists:
+                print("Todays indicators already exist")
+            else: 
+                df = df.iloc[[0]]
+                df.to_sql("Technical_indicators", con=engine, if_exists="append", index=False)
+                print("Success, added the newest date to sql")
+            
     
     
     ##CHECKS IF SQL DATA IS THERE ##
@@ -123,5 +136,5 @@ def toSql(df, credential):
 
 
 # FOR LOCAL TESTING##
-# if __name__ == "__main__":
-#     silver_to_gold(None)
+if __name__ == "__main__":
+    silver_to_gold(None)
