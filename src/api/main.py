@@ -59,6 +59,9 @@ async def root(user = Depends(validate_token)):
 
 @app.get("/market/{symbol}")
 async def getSymbol(symbol: str, user = Depends(validate_token)):
+    roles = user.get("roles", [])
+    if not roles:
+        raise HTTPException(status_code=403, detail="No Role Assigned.")
     with get_conn() as conn:
         cursor: pyodbc.cursor = conn.cursor()
         cursor.execute("SELECT TOP 1 * FROM Technical_indicators WHERE Symbol = ?", symbol)
