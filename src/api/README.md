@@ -20,7 +20,16 @@ Every endpoint is protected by 'validate_token' via FastAPI's 'Depends' - this r
 - If all checks pass, returns the token's payload (user identity, scopes, claims) which flows into the endpoint via 'Depends' as a 'user' parameter
 - If any check fails, raises a 401 with the specific error
 
-## How to run
+## Dockerfile
+Multi-stage build, AKS-ready:
+- Builder stage: installs Python dependencies into a target directory
+- Runtime stage: clean python:3.11-slim-bookworm image with only ODBC Driver 18 and the installed packages copied from the builder
+- curl/gnupg purged after ODBC install to reduce image size
+- Runs as non-root 'appuser' (required for AKS runAsNonRoot policies)
+- CMD uses 'python -m uvicorn' instead of bare 'uvicorn' because multi-stage --target install doesn't place executables on PATH
+- Container has no Azure identity locally - SQL calls will fail. This is expected and resolved by AKS workload identity in Phase 3.
+
+### How to run
 - Locally: 'uvicorn main:app --reload', then 'http://127.0.0.1:8000' (or '/docs' for auto-generated Swagger UI)
 - In Docker: 'docker build -t findash-api .' then 'docker run -p 8000:8000 findash-api'
 
