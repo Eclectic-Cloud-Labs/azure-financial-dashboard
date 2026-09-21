@@ -29,3 +29,7 @@ param functionAppName = 'gurbosFunctionApp'
 param planName = 'serviceAppPlan'
 param funcStorageName= 'gurbofuncstorageaccount'
 param funcAppLocation = 'westus2'
+
+// ACR param
+param acrName = 'gurbosContainerRegistry'
+param acrSkuName = 'Basic'

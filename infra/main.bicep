@@ -31,6 +31,11 @@ param funcAppLocation string
 param applicationInsightsName string = 'applicationInsights'
 
 
+// acr params
+param acrName string
+param acrSkuName string
+
+
 
 resource newRG 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: name
@@ -112,6 +117,16 @@ module functionApp 'modules/compute/functionapp.bicep' = {
     // ADLS Storage because FunctionApp MI needs access to this from role asg 
     storageAccount
   ]
+}
+
+module acr 'modules/platform/acr.bicep' ={
+  name: acrName
+  scope: resourceGroup(newRG.name)
+  params: {
+    acrName: acrName
+    location: location
+    acrSkuName: acrSkuName
+  }
 }
 
 // CLI Deployment CMD (--parameters value depends on prod or dev env)
