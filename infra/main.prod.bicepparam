@@ -33,3 +33,7 @@ param funcAppLocation = 'westus2'
 // ACR param
 param acrName = 'gurbosContainerRegistry'
 param acrSkuName = 'Basic'
+
+// AKS Param
+param dnsPrefix = 'findash-dev'
+param clusterName = 'findash-aks-dev'

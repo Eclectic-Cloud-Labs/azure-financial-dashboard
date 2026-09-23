@@ -35,6 +35,9 @@ param applicationInsightsName string = 'applicationInsights'
 param acrName string
 param acrSkuName string
 
+// aks params
+param dnsPrefix string
+param clusterName string
 
 
 resource newRG 'Microsoft.Resources/resourceGroups@2025-04-01' = {
@@ -126,6 +129,17 @@ module acr 'modules/platform/acr.bicep' ={
     acrName: acrName
     location: location
     acrSkuName: acrSkuName
+  }
+}
+
+module aks 'modules/platform/aks.bicep' = { 
+  name: clusterName
+  scope: resourceGroup(newRG.name)
+  params: {
+      dnsPrefix: dnsPrefix
+      clusterName: clusterName
+      location: location
+      acrName: acrName
   }
 }
 
