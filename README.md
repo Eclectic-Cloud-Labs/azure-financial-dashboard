@@ -19,3 +19,24 @@ React dashboard providing information about public investment markets with Bicep
     - 'silver_to_gold' - computes SMA/RSI/volatility from silver, writes to 'gold/AlphaVantage/technical_indicators.parquet' and Azure SQL (Entra auth, no passwords)
     - Full RBAC permissions given using least privilege principle: Blob/Queue/Table Data Contributor, Key Vault Secrets User, Monitoring Metrics Publisher, all scoped to the Function App's MI. SQL access granted via 'CREATE USER ... FROM EXTERNAL PROVIDER' + db_datawriter/db_datareader roles
     - Storage connection string auto-generated via 'listKeys()' and stored as a Key Vault secret. Its being referenced by the app via '@Microsoft.KeyVault(SecretUri=...)' so no raw secrets on the resource itself
+
+## Phase 3 
+- [Web](./src/web) React + TypeScript frontend scaffolded with Vite
+    - Symbol search box (controlled input), error handling, and a formatted table of prices, RSI, and volatility
+    - MSAL wired in for Microsoft login (loginRedirect + PKCE flow), acquires access tokens and sends them as Bearer tokens on API requests
+- [API](./src/api) containerized FastAPI service serving gold layer technical indicators from Azure SQL as JSON
+    - '/market/{symbol}' endpoint with parameterized queries (SQL injection safe), error handling (404), and Entra token auth to SQL via 'DefaultAzureCredential' (no passwords)
+    - Dockerfile hardened with multi stage build (builder + runtime stages) and non root user, pinned to 'python:3.11-slim-bookworm' with ODBC Driver 18
+    - 'auth.py' validates incoming JWT tokens with python-jose: signature (using Entra's JWKS keys), audience, issuer, and expiry are used to AUTHORIZE. Unauth'd requests return 401
+- Identity
+    - 2 app registrations: 'api-app' (exposes the 'access_as_user' scope) and 'spa-app' (granted that scope as a delegated permission)(both configured on entra)
+    - App roles 'Advisor' and 'Client' defined on 'api-app' for future role-based data filtering
+
+## Phase 4 
+- [ACR](./infra/modules/platform/acr.bicep) Basic tier container registry (admin user disabled), stores the API image
+- [AKS](./infra/modules/platform/aks.bicep) cluster 'findash-aks-dev' on the Free tier, one node, OIDC issuer and workload identity enabled, managed NGINX ingress via the app routing add on
+    - AKS kubelet identity granted AcrPull on the registry so the cluster pulls images with no stored credentials
+- [Kubernetes manifests](./deploy) Deployment, Service (ClusterIP), and Ingress (public IP). The API runs as a pod reachable from the internet through the ingress
+- [Workload identity](./infra/modules/security/workloadidentity.bicep) user assigned managed identity 'podIdentity' federated to the Kubernetes service account 'findash-api-sa'. The pod authenticates to Azure SQL with a federated token and zero secrets in the cluster, using the same 'DefaultAzureCredential' pattern
+- CI/CD
+    - 'aks-autostop.yml' nightly GitHub Actions workflow (cron, OIDC login) that runs 'az aks stop' to control cost
