@@ -8,15 +8,12 @@ from function_app import app
 
 bronzeContainer = "bronze"
 silverContainer = "silver"
-credential = DefaultAzureCredential()
-accountUrl = "https://gurbostorage.blob.core.windows.net"
-
-bsc =  BlobServiceClient(credential=credential, account_url=accountUrl)
-
 
 @app.timer_trigger(schedule="0 15 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
 def bronze_to_silver(myTimer: func.TimerRequest) -> None:
-    
+    credential = DefaultAzureCredential()
+    accountUrl = "https://gurbostorage.blob.core.windows.net"
+    bsc = BlobServiceClient(credential=credential, account_url=accountUrl)
     container_client = bsc.get_container_client(container=bronzeContainer)
     blobs = container_client.list_blobs()
     newBlob = None
@@ -29,7 +26,7 @@ def bronze_to_silver(myTimer: func.TimerRequest) -> None:
             newBlob_date = blob.last_modified
     
     df = transform(newBlob, newBlob_date, container_client)
-    sendToSilver(df)
+    sendToSilver(df, bsc)
 
 
 ##HELPER FUNCTIONS##
@@ -47,7 +44,7 @@ def transform(newBlob, newBlob_date, container_client):
     return df
 
 # sends parquet file to silver storage 
-def sendToSilver(df):
+def sendToSilver(df, bsc):
     # create in memory byte file location
     buffer = io.BytesIO()
     

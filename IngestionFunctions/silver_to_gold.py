@@ -10,7 +10,7 @@ import pyodbc
 import time
 
 
-# @app.timer_trigger(schedule="0 20 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
+@app.timer_trigger(schedule="0 20 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
 def silver_to_gold(myTimer: func.TimerRequest) -> None:
     credential = DefaultAzureCredential()
     accountUrl = "https://gurbostorage.blob.core.windows.net"
@@ -88,7 +88,7 @@ def toSql(df, credential):
         token_struct = struct.pack(f'<I{len(token_bytes)}s', len(token_bytes), token_bytes)
         
         conn_str = (
-            "Driver={ODBC Driver 18 for SQL Server};Server=gurboSqlServer.database.windows.net;Database=gurboSqlDb;Encrypt=yes;"
+            "Driver={ODBC Driver 18 for SQL Server};Server=gurbosSqlServer.database.windows.net;Database=gurbosSqlDb;Encrypt=yes;"
         )
         max_attempts = 5
         for attempt in range(max_attempts):
@@ -97,6 +97,7 @@ def toSql(df, credential):
                 return pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}, timeout=60)
                 
             except pyodbc.Error as er:
+                print(f"SQL connection error: {str(er)}")
                 if "40613" in str(er):
                     time.sleep(60)  
                     continue
@@ -116,7 +117,7 @@ def toSql(df, credential):
             df.to_sql("Technical_indicators", con=engine, if_exists='append', index=False)
         else:
             currentDateExists = connection.execute(text("SELECT COUNT(*) FROM Technical_indicators WHERE Stock_date = :date"), {"date": df.iloc[0]["Stock_date"]}).scalar() > 0 # newest date checker 
-             
+
             if currentDateExists:
                 print("Todays indicators already exist")
             else: 
@@ -136,5 +137,6 @@ def toSql(df, credential):
 
 
 # FOR LOCAL TESTING##
-if __name__ == "__main__":
-    silver_to_gold(None)
+
+# if __name__ == "__main__":
+#     silver_to_gold(None)

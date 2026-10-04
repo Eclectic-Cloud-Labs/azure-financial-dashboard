@@ -26,7 +26,7 @@ def get_conn():
     token_struct = struct.pack(f'<I{len(token_bytes)}s', len(token_bytes), token_bytes)
     
     conn_str = (
-        "Driver={ODBC Driver 18 for SQL Server};Server=gurboSqlServer.database.windows.net;Database=gurboSqlDb;Encrypt=yes;"
+        "Driver={ODBC Driver 18 for SQL Server};Server=gurbosSqlServer.database.windows.net;Database=gurbosSqlDb;Encrypt=yes;"
     )
     max_attempts = 5
     for attempt in range(max_attempts):
@@ -35,14 +35,13 @@ def get_conn():
             return pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}, timeout=60)
             
         except pyodbc.Error as er:
+            print(f"Connection error: {str(er)}")
             if "40613" in str(er):
                 time.sleep(60)  
                 continue
             elif str(er):
                 raise Exception(str(er))
     raise Exception(f"Failed to connect after {max_attempts} attempts")
-
-
 
 @app.get("/")
 async def root(user = Depends(validate_token)):
@@ -57,11 +56,12 @@ async def root(user = Depends(validate_token)):
 
         return dict(zip(titles, row))
 
+
 @app.get("/market/{symbol}")
 async def getSymbol(symbol: str, user = Depends(validate_token)):
-    roles = user.get("roles", [])
-    if not roles:
-        raise HTTPException(status_code=403, detail="No Role Assigned.")
+    # roles = user.get("roles", [])
+    # if not roles:
+    #     raise HTTPException(status_code=403, detail="No Role Assigned.")
     with get_conn() as conn:
         cursor: pyodbc.cursor = conn.cursor()
         cursor.execute("SELECT TOP 1 * FROM Technical_indicators WHERE Symbol = ?", symbol)

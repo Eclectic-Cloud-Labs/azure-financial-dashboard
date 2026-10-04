@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: findash-api-service       # internal address for pods
+
+spec:
+  selector:
+    app: findash-api-pod          # route traffic to pods with following label
+
+  ports:
+    - port: 80                    # port the Service listens on 
+      targetPort: 8000            # port on the pod to forward to 
+
+  type: ClusterIP                 # internal only - not exposed to internet (Ingress handles that)

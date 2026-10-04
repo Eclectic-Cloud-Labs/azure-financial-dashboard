@@ -6,7 +6,6 @@ param storageName string
 param logAnalyticsName string
 param applicationInsightsName string
 param keyVaultName string
-param storageConnectionString string
 
 resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
   name: functionAppName
@@ -39,7 +38,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'python' }
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
 
-        { name: 'AzureWebJobsStorage', value: '@Microsoft.KeyVault(SecretUri=${storageConnectionString})' }
+        { name: 'AzureWebJobsStorage', value: 'DefaultEndpointsProtocol=https;AccountName=${funcStorage.name};AccountKey=${listKeys(funcStorage.id, funcStorage.apiVersion).keys[0].value};EndpointSuffix=core.windows.net' }
 
         { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: applicationInsights.properties.ConnectionString }
         { name: 'APPLICATIONINSIGHTS_AUTHENTICATION_STRING', value: 'Authorization=AAD' }
@@ -61,16 +60,8 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   }
 }
 
-resource funcStorage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+resource funcStorage 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
   name: funcStorageName
-  location: location
-  sku: { name: 'Standard_LRS' }
-  kind: 'StorageV2'
-  properties: {
-    allowBlobPublicAccess: false
-    minimumTlsVersion: 'TLS1_2'
-    supportsHttpsTrafficOnly: true
-  }
 }
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {

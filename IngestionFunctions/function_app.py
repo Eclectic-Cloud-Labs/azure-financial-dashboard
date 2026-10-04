@@ -5,6 +5,7 @@ from azure.keyvault.secrets import SecretClient
 import requests
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
+
 app = func.FunctionApp()
 
 # runtime detection
@@ -16,7 +17,7 @@ from silver_to_gold import silver_to_gold
 @app.timer_trigger(schedule="0 0 21 * * *", arg_name="myTimer", run_on_startup=False, use_monitor=False) 
 def AlphaVantageIngest(myTimer: func.TimerRequest) -> None:
     credential = DefaultAzureCredential()
-    client = SecretClient(vault_url = "https://gurbosvault.vault.azure.net", credential = credential)
+    client = SecretClient(vault_url = "https://gurbovault.vault.azure.net", credential = credential)
     secret = client.get_secret("AlphaVantageAPI")
     
     upload_blob(secret, credential)
@@ -36,8 +37,8 @@ def upload_blob(secret, credential):
     # upload to bronze storage
     bsc = BlobServiceClient(account_url=accountUrl, credential=credential)
     container_client = bsc.get_container_client(container="bronze")
-    container_client.upload_blob(name=filename, data=data)
-    print("Raw Data has been sent to bronze.")
+    container_client.upload_blob(name=filename, data=data, overwrite=True)
+    print("Raw Data has been sent to bronze.")  
 
 
 ##FOR LOCAL TESTING##

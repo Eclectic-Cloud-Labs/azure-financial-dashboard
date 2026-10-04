@@ -12,6 +12,7 @@ param startDate string
 // storage params
 param storageName string
 param storageLocation string
+param funcStorageName string
 
 // KeyVault Params
 param keyVaultName string
@@ -26,7 +27,6 @@ param sqlLocation string
 // function app params
 param functionAppName string
 param planName string
-param funcStorageName string
 param funcAppLocation string
 param applicationInsightsName string = 'applicationInsights'
 
@@ -38,6 +38,11 @@ param acrSkuName string
 // aks params
 param dnsPrefix string
 param clusterName string
+
+// pod identiy params
+param podIdentity string
+
+
 
 
 resource newRG 'Microsoft.Resources/resourceGroups@2025-04-01' = {
@@ -76,8 +81,9 @@ module storageAccount 'modules/data/storage.bicep' = {
   params:{
     storageName: storageName
     storageLocation: storageLocation
+    funcStorageName: funcStorageName
+    location: location
   }
-
 }
 
 module sqlServer 'modules/data/sql.bicep' = {
@@ -100,6 +106,9 @@ module vault 'modules/security/keyvault.bicep' = {
     secretName: secretName
     funcStorageName: funcStorageName
   }
+  dependsOn: [
+    storageAccount
+  ]
 }
 
 module functionApp 'modules/compute/functionapp.bicep' = {
@@ -114,7 +123,6 @@ module functionApp 'modules/compute/functionapp.bicep' = {
     applicationInsightsName: applicationInsightsName
     logAnalyticsName: logAnalytics.name
     keyVaultName: keyVaultName
-    storageConnectionString: vault.outputs.funcStorageConnectionString
   }
   dependsOn: [
     // ADLS Storage because FunctionApp MI needs access to this from role asg 
@@ -140,6 +148,16 @@ module aks 'modules/platform/aks.bicep' = {
       clusterName: clusterName
       location: location
       acrName: acrName
+  }
+}
+
+module userAsgIdentity 'modules/security/workloadidentity.bicep' = {
+  name: podIdentity
+  scope: resourceGroup(newRG.name)
+  params:{
+    podIdentity: podIdentity
+    location:location
+    aksOidcIssuerUrl: aks.outputs.oidcIssuerUrl
   }
 }
 

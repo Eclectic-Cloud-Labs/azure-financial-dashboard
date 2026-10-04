@@ -11,29 +11,32 @@ param contactEmails = ['gurvir-k@hotmail.com']
 param startDate = '2026-08-01T00:00:00Z'
 
 // storage params
-param storageName = 'gurbostorage'
+param storageName = 'gurbostorageprod'
 param storageLocation = location
+param funcStorageName = 'gurbofuncstorageprod'
 
 // Key Vault
-param keyVaultName = 'gurbosVault'
+param keyVaultName = 'gurboVaultProd'
 param secretName = 'storageConnectionString'
 
 // sql server params
-param sqlServerName = 'gurboSqlServer'
-param sqlDatabaseName = 'gurboSqlDb'
+param sqlServerName = 'gurbosSqlServerProd'
+param sqlDatabaseName = 'gurbosSqlDbProd'
 param firewallName = 'sqlFirewall'
 param sqlLocation = 'eastus2'
 
 // functionapp params
-param functionAppName = 'gurbosFunctionApp'
-param planName = 'serviceAppPlan'
-param funcStorageName= 'gurbofuncstorageaccount'
+param functionAppName = 'gurbosFunctionAppProd'
+param planName = 'serviceAppPlanProd'
 param funcAppLocation = 'westus2'
 
 // ACR param
-param acrName = 'gurbosContainerRegistry'
+param acrName = 'gurboscontainerregistryprod'
 param acrSkuName = 'Basic'
 
 // AKS Param
-param dnsPrefix = 'findash-dev'
-param clusterName = 'findash-aks-dev'
+param dnsPrefix = 'findash-prod'
+param clusterName = 'findash-aks-prod'
+
+// pod identity param
+param podIdentity = 'podIdentityProd'

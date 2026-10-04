@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: findash-api-deployment
+
+spec:
+  replicas: 1
+
+  selector:       # selects which pod to target 
+    matchLabels:
+      app: findash-api-pod  
+
+  template:       # pod blueprint
+    metadata:
+      labels:
+        app: findash-api-pod #must be the same as selection.matchlabels
+        azure.workload.identity/use: "true"
+
+    spec:
+      serviceAccountName: findash-api-sa
+      containers:
+        - name: findash-api-container    # name of the container inside the pod
+          image: gurboscontainerregistry.azurecr.io/findash-api:latest      # Docker image to pull from ACR
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
