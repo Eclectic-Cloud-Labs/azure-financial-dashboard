@@ -1,0 +1,24 @@
+name: AKS Nightly Auto-Stop
+
+on:
+    schedule:
+        - cron: "0 8 * * *" # runs at 08:00 UTC daily
+    workflow_dispatch: # also allows manual trigger from GitHub UI
+
+permissions:
+    id-token: write # required for OIDC
+    contents: read
+
+jobs:
+    stop-aks:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Azure Login (OIDC)
+              uses: azure/login@v2
+              with:
+                client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+            - name: Stop AKS Cluster
+              run: az aks stop --name findash-aks-dev --resource-group rgFindashDev
