@@ -3,3 +3,4 @@ uvicorn
 pyodbc
 azure-identity
 python-jose[cryptography]
+openai

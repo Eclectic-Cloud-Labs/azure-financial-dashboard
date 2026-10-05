@@ -13,6 +13,26 @@ Containerized FastAPI service (Python 3.11, Docker) that serves gold layer techn
 
 Every endpoint is protected by 'validate_token' via FastAPI's 'Depends' - this runs before the endpoint logic and validates the JWT from the 'Authorization: Bearer <token>' header. If the token is missing, forged, expired, or meant for a different API, the request gets a 401 before any SQL query runs.
 
+## Endpoints
+
+### Data
+- 'GET /market/{symbol}' returns the latest technical indicators (OHLCV, SMA 5/10/20, RSI, volatility) for a symbol from Azure SQL. Parameterized query (SQL injection safe), 404 on unknown symbol, requires a valid Entra token.
+
+### AI (Azure OpenAI, gpt-5-mini)
+- 'GET /advice/brief/{symbol}' pulls a symbol's metrics and has the model describe its technical posture using standard technical-analysis conventions (RSI over 70 overbought, price vs SMAs, SMA alignment). Returns a structured response with the brief, the data-as-of date, and a 'not financial advice' disclaimer.
+- 'GET /advice/ask/{question}' natural-language Q and A using OpenAI function calling. The model decides when it needs data, requests the 'get_metrics' tool, the API runs the SQL and feeds the result back, and the model answers grounded in real values.
+
+Design principle: the AI only ever describes numbers the pipeline computed. It never invents values, predicts prices, or gives buy/sell advice. Guardrails (disclaimer, data-as-of timestamp, strict system prompts) are on every AI response.
+
+### How the AI auth works
+The API calls Azure OpenAI with no API key. 'DefaultAzureCredential' builds a token provider scoped to 'https://cognitiveservices.azure.com/.default', which the 'AzureOpenAI' client uses to fetch and refresh Entra tokens automatically. On AKS the identity is 'podIdentity' (workload identity); locally it is the developer's 'az login'. The OpenAI account grants that identity the 'Cognitive Services OpenAI User' role, so RBAC on the resource decides access. Same passwordless pattern as the SQL connection.
+
+### How function calling works ('/advice/ask')
+1. The API sends the question and a tool definition for 'get_metrics' to the model.
+2. Based on the question, the model might need data and responds with a assistant response along with a tool call.
+3. The API runs its own 'get_metrics' (own SQL query), gets the data, and appends it to the conversation as a 'tool' message referencing the call id.
+4. The API calls the model a second time with the full conversation. The model now has the data and writes the final answer with the AI never touching the database directly.
+
 ## How auth.py works
 - 'HTTPBearer()' extracts the Bearer token from the request header automatically - no header means instant 401
 - 'get_signing_keys()' fetches Entra's public signing keys from the JWKS endpoint ('https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys') - these are the public counterparts to the private key Microsoft used to sign the token
@@ -30,7 +50,8 @@ Multi-stage build, AKS-ready:
 - Container has no Azure identity locally - SQL calls will fail. This is expected and resolved by AKS workload identity in Phase 3.
 
 ### How to run
-- Locally: 'uvicorn main:app --reload', then 'http://127.0.0.1:8000' (or '/docs' for auto-generated Swagger UI)
+- 'pip install -r requirements.txt' (fastapi, uvicorn, pyodbc, azure-identity, python-jose, openai)
+- Locally: 'uvicorn main:app --reload', then 'http://127.0.0.1:8000' ('/docs' for Swagger)
 - In Docker: 'docker build -t findash-api .' then 'docker run -p 8000:8000 findash-api'
 
 ## Reasoning
@@ -44,3 +65,5 @@ Multi-stage build, AKS-ready:
 - **ODBC driver missing in container**: 'import pyodbc' crashed with 'libodbc.so.2 not found' - the base image has no ODBC driver. Fixed by installing 'unixodbc-dev' + 'msodbcsql18' in the Dockerfile via 'apt-get' before 'pip install'. On Debian 13 this hit a Microsoft key-bundle bug, so pinned the base image to 'bookworm' (Debian 12), which Microsoft's signing key correctly covers.
 - **Container has no Azure identity**: running the container locally, 'DefaultAzureCredential' fails (no 'az login' inside it) - expected; resolved properly by AKS workload identity later.
 - **Audience mismatch on token validation**: 'jwt.decode()' rejected valid tokens because 'audience' was set to the bare client ID ('62599e34-...') but Entra stamps the token's 'aud' claim with the full Application ID URI ('api://62599e34-...'). Fixed by matching the full URI in auth.py.
+- **ODBC driver missing in container**: installed 'unixodbc-dev' plus 'msodbcsql18'; pinned base image to 'bookworm' (Debian 12) to avoid a Microsoft signing-key bug on Debian 13.
+- **Azure OpenAI model choice**: the planned gpt-4o-mini was deprecated with zero quota; switched to gpt-5-mini (had quota on GlobalStandard). Model availability and quota vary by region and change over time.

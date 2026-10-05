@@ -42,6 +42,15 @@ param clusterName string
 // pod identiy params
 param podIdentity string
 
+// AI params
+param aiName string
+param aiModel string
+param aiVersion string
+param aiCdn string
+param aiModelDeploymentName string
+param aiCapacity int
+
+
 
 
 
@@ -158,6 +167,21 @@ module userAsgIdentity 'modules/security/workloadidentity.bicep' = {
     podIdentity: podIdentity
     location:location
     aksOidcIssuerUrl: aks.outputs.oidcIssuerUrl
+  }
+}
+
+module ai './modules/ai/openai.bicep' = {
+  name: aiName
+  scope: resourceGroup(newRG.name)
+  params: {
+    aiName: aiName
+    location: location
+    model: aiModel
+    modelversion: aiVersion
+    customDomainName: aiCdn
+    modeldeploymentname: aiModelDeploymentName
+    capacity: aiCapacity
+    podIdentityPrincipalId: userAsgIdentity.outputs.principalId
   }
 }
 

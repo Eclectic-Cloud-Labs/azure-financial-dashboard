@@ -42,4 +42,10 @@ param clusterName = 'findash-aks-dev'
 // pod identiy params
 param podIdentity = 'podIdentity'
 
+param aiName = 'gurbosopenai'
+param aiModel = 'gpt-5-mini'
+param aiVersion = '2025-08-07'
+param aiModelDeploymentName = 'gpt-5-mini'
+param aiCdn = 'gurbosopenai'
+param aiCapacity = 10
 

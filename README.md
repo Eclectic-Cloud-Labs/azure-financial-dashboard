@@ -2,7 +2,7 @@
 React dashboard providing information about public investment markets with Bicep IaC from day one. 
 
 # Status
-- Phase 2 complete - full bronze → silver → gold → SQL pipeline built and working. Planning Phase 3
+- Phases 1 to 4 complete. Full data pipeline, authenticated API, React frontend, containerized API on AKS with workload identity, and an AI insights layer (Azure OpenAI).
 
 ## Phase 1
 - Created Entra app registration with service principal (scoped to subscription), 2 federated credentials implemented for 'Pull request' and Deploy for Github Actions OIDC
@@ -40,3 +40,11 @@ React dashboard providing information about public investment markets with Bicep
 - [Workload identity](./infra/modules/security/workloadidentity.bicep) user assigned managed identity 'podIdentity' federated to the Kubernetes service account 'findash-api-sa'. The pod authenticates to Azure SQL with a federated token and zero secrets in the cluster, using the same 'DefaultAzureCredential' pattern
 - CI/CD
     - 'aks-autostop.yml' nightly GitHub Actions workflow (cron, OIDC login) that runs 'az aks stop' to control cost
+
+## Phase 5
+- [Azure OpenAI](./infra/modules/ai/openai.bicep) account 'gurbosopenai' deployed via Bicep with a gpt 5 mini model deployment
+    - 'podIdentity' granted the 'Cognitive Services OpenAI User' role, so the API calls the model passwordless via 'DefaultAzureCredential'
+- AI endpoints in [the API](./src/api)
+    - '/advice/brief/{symbol}' gives a symbol's computed metrics to the model, which describes the stock's technical posture. Returns the message with up to date date and a not financial advice disclaimer
+    - '/advice/ask/{question}' natural language Q and A using OpenAI function calling. Based on the question, the model decides when it needs data. When it does, it calls the 'get_metrics' tool and the API runs the SQL query and provides the result back.
+- Design principle: the AI only tells users about numbers the pipeline computed. It never creates its own values, predicts prices, or gives buy/sell advice. Disclaimers are on every AI response
