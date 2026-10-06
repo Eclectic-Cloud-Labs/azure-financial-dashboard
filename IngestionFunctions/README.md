@@ -1,10 +1,14 @@
 # IngestionFunctions
-Python Azure Function App (v2 model, Linux Consumption) - pulls Alpha Vantage market data into the 'bronze' container of the ADLS Gen2 data lake.
+Python Azure Function App (v2 model, Linux Consumption) - pulls Alpha Vantage market data (14 tickers) into the 'bronze' container of the ADLS Gen2 data lake.
+
 
 ## What it does
-- [Ingestion file](./function_app.py) ingests API data into 'bronze' and is timer triggered daily at '0 0 21 * * *' (~1hr EDT after markets close). Reads Alpha Vantage API key from Key Vault via 'DefaultAzureCredential', calls 'TIME_SERIES_DAILY', writes raw JSON to 'bronze' as one timestamped file per run.
-- [Transformation file](./bronze_to_silver.py) reads data from 'bronze' container using DefaultAzureCredential. Using a simple if statement and comparing 'last_modified' datetime obj from the list of blobs, the correct blob is consistently being pulled. Cleans and casts the data with pandas, writes structured Parquet to 'silver'.
-- [Gold file](./silver_to_gold.py) reads silver's Parquet, computes SMA (5/10/20-day), RSI (14-day), and rolling volatility with pandas. Writes the result to 'gold' as Parquet and to Azure SQL ('Technical_indicators' table), Entra-authenticated, no passwords.
+Ingests a curated watchlist of 14 tickers (AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, IBM, JPM, V, WMT, DIS, KO, NFLX). The pipeline maintains the data centrally - users never supply their own API keys.
+
+## What it does
+- [Ingestion file](./function_app.py) ingests API data into 'bronze' and is timer triggered daily at '0 0 21 * * *' (~1hr EDT after markets close). Reads Alpha Vantage API key from Key Vault via 'DefaultAzureCredential', then loops the ticker list calling 'TIME_SERIES_DAILY' for each symbol provided, writes raw JSON to 'bronze' as one timestamped file per run. It then skips any symbol whos response is missing 'Time Series (daily)' and sleeps 15s between each symbol to allow for correct provisioning on Azure Storage
+- [Transformation file](./bronze_to_silver.py) reads data from 'bronze' container using DefaultAzureCredential, finds newest blob per symbol (using last modified) ensuring the correct blob is consistently being pulled, cleans and casts the data with pandas, and writes one Parquet file to 'silver' per symbol in a AlphaVantage folder.
+- [Gold file](./silver_to_gold.py) Goes through each symbol file to clean and compute  SMA (5/10/20-day), RSI (14-day), and rolling volatility with pandas. Writes the result to 'gold' as Parquet and to Azure SQL ('Technical_indicators' table), Entra-authenticated, no passwords.
 
 ## Auth
 Uses 'DefaultAzureCredential' throughout. No connection strings or keys in code. System assigned MI in Azure. See 'infra/README.md' for the RBAC role assignments granted to the Function App's MI.
@@ -34,7 +38,7 @@ See [Requirements](./requirements.txt) - 'azure-functions', 'azure-identity', 'a
 - Also hit and fixed: a Bicep circular dependency (functionApp ↔ vault) caused by a role assignment sitting in the wrong module - moved it into functionapp.bicep so the dependency only flows one direction
 - Confirmed working end to end: 'func publish' succeeds, 'AlphaVantageIngest' registered and enabled on the deployed Function App
 
-## Silver → Gold → SQL (the hard part)
+## Silver → Gold → SQL 
 - Chose not to use ADF here - too heavy for this data volume, and this project purposely covers new ground (app-tier identity) rather than reusing prior ADF experience
 - Tried 'mssql-python' (Microsoft's newer driver) first. Hit TLS errors across multiple tools (Python, VS Code). Diagnosed via 'openssl s_client' (confirmed TLS 1.2 itself was fine) and 'Get-OdbcDriver' (found only a legacy driver installed, not a real ODBC driver) - installed [ODBC Driver 18 for SQL Server](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver17) directly
 - Tried using  SQLAlchemy with mssql-python's dialect ('mssql+mssqlpython'). This only exists in SQLAlchemy 2.1.0b2 which is a pre-release and too new for a project recreating a production env. Reverted to 'pyodbc'. It is older, but mature and well documented
@@ -53,6 +57,8 @@ See [Requirements](./requirements.txt) - 'azure-functions', 'azure-identity', 'a
 - Root cause: primary-key violation - 'to_sql(if_exists="append")' was resending the full ~100-day history every run, and SQL Server rejects the entire batch on any single duplicate row. Fixed by writing only the newest row each run, matching the actual once-daily cadence
 - **Sept 17 update**
   - Added difference use cases for the data to flow into sql. First is if there is no data and table existing on the sql db, i add the entire table, otherwise i insert the newest line/date with a clean hanlding of silent failures
+- **Oct 6 update**: Updated the pipeline from single IBM ticker to a 14 symbol watchlist. Ingestion loops over the list and bronze_to_silver groups blobs by symbol and processes the newest per symbol, silver_to_gold loops through the files and the hardcoded 'Symbol = "IBM"' was removed. Insert logic is based on the symbol with the newest row being added if existence is not true
+- Alpha Vantage free tier is ~25 requests/day and 5/min - 14 tickers fits daily but leaves little testing headroom; switching providers (Finnhub etc.) is the clean fix if it becomes limiting (which it will but works small scale)
 
 ## Misc
 - Local Python is 3.13, deployed runtime is Python 3.11 (Azure Functions doesn't yet support 3.13 for this consumption plan - checked through the Portal). Remote build handles this correctly regardless of local version.

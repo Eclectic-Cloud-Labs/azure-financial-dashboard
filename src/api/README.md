@@ -67,3 +67,4 @@ Multi-stage build, AKS-ready:
 - **Audience mismatch on token validation**: 'jwt.decode()' rejected valid tokens because 'audience' was set to the bare client ID ('62599e34-...') but Entra stamps the token's 'aud' claim with the full Application ID URI ('api://62599e34-...'). Fixed by matching the full URI in auth.py.
 - **ODBC driver missing in container**: installed 'unixodbc-dev' plus 'msodbcsql18'; pinned base image to 'bookworm' (Debian 12) to avoid a Microsoft signing-key bug on Debian 13.
 - **Azure OpenAI model choice**: the planned gpt-4o-mini was deprecated with zero quota; switched to gpt-5-mini (had quota on GlobalStandard). Model availability and quota vary by region and change over time.
+- **Oct 6 fix**: Added a ORDER BY sql query to main.py to ensure the correct data is being posted on the react app (was filtered by oldest data first which provided NULL values for some data indicators)

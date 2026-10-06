@@ -19,28 +19,22 @@ def silver_to_gold(myTimer: func.TimerRequest) -> None:
     silverContName = 'silver'
     goldContName = 'gold'
     silver_container_client = bsc.get_container_client(silverContName)
-    blobs = silver_container_client.list_blobs()
     gold_container_client = bsc.get_container_client(goldContName)
     
-    df = read_silver(blobs, silver_container_client)
-    df = transform_silver_to_gold(df)
-    sendBlob(df, gold_container_client)
-    toSql(df, credential)
-
-
-# Helper Functions
-def read_silver(blobs, silver_container_client):
+    blobs = silver_container_client.list_blobs()
     
-    newBlob = None
+
     for blob in blobs:
-        if ".parquet" in blob.name:
-            newBlob = blob
-    data_blob_client = silver_container_client.get_blob_client(blob=newBlob.name)
-    df = data_blob_client.download_blob().readall()
-    
-    df = pd.read_parquet(BytesIO(df))
-    
-    return df
+        if ".parquet" not in blob.name:
+            continue
+        raw = silver_container_client.get_blob_client(blob.name).download_blob().readall()
+        df = pd.read_parquet(BytesIO(raw))
+        symbol = df["Symbol"].iloc[0]
+        
+        df = transform_silver_to_gold(df)
+        sendBlob(df, gold_container_client, symbol)
+        toSql(df, credential)
+
 
 def transform_silver_to_gold(df):
     # list is backwards in reference to pandas functions so i flipped it 
@@ -62,18 +56,15 @@ def transform_silver_to_gold(df):
     
     # Volatility
     df["volatility"] = df["Symbol_close"].pct_change().rolling(20).std()
-    df["Symbol"] = "IBM"
     
     # reflipped
     df = df.sort_index(ascending=False)
-    
     df = df.reset_index()
-    print(df.columns)
     
     return df
     
-def sendBlob(df, gold_container_client):
-    filename = "AlphaVantage/technical_indicators.parquet"
+def sendBlob(df, gold_container_client, symbol):
+    filename = f"AlphaVantage/{symbol}_technical_indicators.parquet"
     buffer = BytesIO()
     df.to_parquet(buffer, engine="pyarrow")
     buffer.seek(0)
@@ -106,35 +97,38 @@ def toSql(df, credential):
         raise Exception(f"Failed to connect after {max_attempts} attempts")
 
 
+    symbol = df.iloc[0]["Symbol"]
     # gets the first row from df so i only insert that into the sql table
     # double [[]] so it keep it as a df instead of a series 
     engine = create_engine("mssql+pyodbc://", creator=get_conn)
     # checks if there is data in the sql database and inserts full data if not
     with engine.connect() as connection:
         tableExists = connection.execute(text("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'Technical_indicators'")).scalar() > 0 # table existence checker
+        
         if not tableExists:
+            print("Table does not exist. create it manually first. Skipping insert.")
+            return
+        symbolExists = connection.execute(
+            text("SELECT COUNT(*) FROM Technical_indicators WHERE Symbol = :sym"), {"sym": symbol}
+        ).scalar() > 0
+
+        if not symbolExists:
             print("No previous data exists, inserting full table")
             df.to_sql("Technical_indicators", con=engine, if_exists='append', index=False)
         else:
-            currentDateExists = connection.execute(text("SELECT COUNT(*) FROM Technical_indicators WHERE Stock_date = :date"), {"date": df.iloc[0]["Stock_date"]}).scalar() > 0 # newest date checker 
+            # datafram instead of series
+            newest = df.iloc[[0]]
+            newest_date = newest.iloc[0]["Stock_date"]
+            dateExists = connection.execute(
+                text("SELECT COUNT(*) FROM Technical_indicators WHERE Symbol = :sym AND Stock_date = :date"),
+                {"sym": symbol, "date": newest_date}
+            ).scalar() > 0
 
-            if currentDateExists:
-                print("Todays indicators already exist")
-            else: 
-                df = df.iloc[[0]]
-                df.to_sql("Technical_indicators", con=engine, if_exists="append", index=False)
-                print("Success, added the newest date to sql")
-            
-    
-    
-    ##CHECKS IF SQL DATA IS THERE ##
-    # with get_conn() as conn:
-    #     cursor = conn.cursor()
-    #     cursor.execute("SELECT Symbol FROM Technical_indicators")
-    #     for row in cursor.fetchall():
-    #         print(row)
-
-
+            if dateExists:
+                print(f"{symbol} already has {newest_date}, skipping")
+            else:
+                newest.to_sql("Technical_indicators", con=engine, if_exists="append", index=False)
+                print(f"Added newest row for {symbol} ({newest_date})")
 
 # FOR LOCAL TESTING##
 

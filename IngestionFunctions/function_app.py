@@ -5,12 +5,15 @@ from azure.keyvault.secrets import SecretClient
 import requests
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
+import time
 
 app = func.FunctionApp()
 
 # runtime detection
 from bronze_to_silver import bronze_to_silver
 from silver_to_gold import silver_to_gold
+
+tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "IBM", "JPM", "V", "WMT", "DIS", "KO", "NFLX"]
 
 # Azure function app sees this and retains when the function is supossed to run based on the schedule
 # Function brings in "credential" to authenticate identity (used to get key vault secret for Alpha vantage API, )
@@ -24,21 +27,28 @@ def AlphaVantageIngest(myTimer: func.TimerRequest) -> None:
     
 # API call to Alpha Vantage, creates clients to access blob storage 
 def upload_blob(secret, credential):
-    url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey={secret.value}"
-    # for later stock symbol gets
-    urlData = {"url": "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey={secret.value}"}
-    r = requests.get(url)
-    # parse to Json 
-    data = json.dumps(r.json())
-    filename = f"AlphaVantage/AV-{datetime.now().strftime('%Y-%m-%d-%H-%M')}.json"
-    
     accountUrl = "https://gurbostorage.blob.core.windows.net"
-    
+        
     # upload to bronze storage
     bsc = BlobServiceClient(account_url=accountUrl, credential=credential)
     container_client = bsc.get_container_client(container="bronze")
-    container_client.upload_blob(name=filename, data=data, overwrite=True)
-    print("Raw Data has been sent to bronze.")  
+    for ticker in tickers:
+        url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={ticker}&apikey={secret.value}"
+        r = requests.get(url)
+
+        # parse to Json 
+        jsonData = r.json()
+        if "Time Series (Daily)" not in jsonData:
+            print(f"Skipping {ticker} - no data (likely rate limited): {jsonData}")
+            continue   # skip this ticker
+
+        data = json.dumps(jsonData)
+        filename = f"AlphaVantage/AV-{ticker}-{datetime.now().strftime('%Y-%m-%d-%H-%M')}.json"
+
+        # send data to bronze
+        container_client.upload_blob(name=filename, data=data, overwrite=True)
+        print(f"Raw Data for {ticker} been sent to bronze.")  
+        time.sleep(15)
 
 
 ##FOR LOCAL TESTING##

@@ -15,36 +15,45 @@ def bronze_to_silver(myTimer: func.TimerRequest) -> None:
     accountUrl = "https://gurbostorage.blob.core.windows.net"
     bsc = BlobServiceClient(credential=credential, account_url=accountUrl)
     container_client = bsc.get_container_client(container=bronzeContainer)
-    blobs = container_client.list_blobs()
-    newBlob = None
-    newBlob_date = None
+    blobs = list(container_client.list_blobs())
     
-    # looks for the newest blob file for most recent reports
+    # find the newest blob PER symbol
+    newest_per_symbol = {}   # {symbol: blob}
     for blob in blobs:
-        if newBlob is None or blob.last_modified > newBlob.last_modified:
-            newBlob = blob
-            newBlob_date = blob.last_modified
-    
-    df = transform(newBlob, newBlob_date, container_client)
-    sendToSilver(df, bsc)
+        # filename format: AlphaVantage/AV-{SYMBOL}-{timestamp}.json
+        parts = blob.name.split("-")
+        if len(parts) < 2:
+            print(f"Skipping incorrect blob name {blob.name}")
+            continue
+        
+        symbol = parts[1]
+        if symbol not in newest_per_symbol or blob.last_modified > newest_per_symbol[symbol].last_modified:
+            newest_per_symbol[symbol] = blob
+
+    # process each symbol's newest blob
+    for symbol, blob in newest_per_symbol.items():
+        df = transform(blob, container_client, symbol)
+        sendToSilver(df, bsc, symbol)
+
 
 
 ##HELPER FUNCTIONS##
 # cleans raw data from Time Series (Daily) key, add new titles, make all applicable values into float types, index/date column turns into real datetime obj's, and returns df for next function to use 
-def transform(newBlob, newBlob_date, container_client):
-    print(f"The last blob update was {newBlob_date}")
+def transform(newBlob, container_client, symbol):
     data = container_client.download_blob(newBlob).readall().decode("utf-8")
     data = json.loads(data) 
     data = data["Time Series (Daily)"]
+    
     df = pd.DataFrame.from_dict(data, orient='index')
     df.rename(columns={"1. open": "Symbol_open","2. high": "Symbol_High","3. low": "Symbol_low","4. close": "Symbol_close","5. volume": "Symbol_volume"}, inplace=True)
     df = df.astype(float)
     df.index = pd.to_datetime(df.index, format="%Y-%m-%d")
     df.index.name = "Stock_date"
+    df["Symbol"] = symbol 
     return df
 
 # sends parquet file to silver storage 
-def sendToSilver(df, bsc):
+def sendToSilver(df, bsc, symbol):
     # create in memory byte file location
     buffer = io.BytesIO()
     
@@ -54,7 +63,7 @@ def sendToSilver(df, bsc):
     
     # get silver + upload
     silver_Container_client = bsc.get_container_client(container=silverContainer)
-    silver_Container_client.upload_blob(name="AlphaVantage/ohlc.parquet", data=buffer, overwrite=True)
+    silver_Container_client.upload_blob(name=f"AlphaVantage/{symbol}-ohlc.parquet", data=buffer, overwrite=True)
 
 
 

@@ -69,7 +69,7 @@ def getChatResp(client, msg, tools=None):
 def get_metrics(symbol: str) -> dict:
     with get_conn() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT TOP 1 * FROM Technical_indicators WHERE Symbol = ?", symbol)
+        cursor.execute("SELECT TOP 1 * FROM Technical_indicators WHERE Symbol = ? ORDER BY Stock_date DESC", symbol)
         row = cursor.fetchone()
         if row is None:
             return {"error": f"No data for {symbol}"}

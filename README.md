@@ -14,13 +14,15 @@ React dashboard providing information about public investment markets with Bicep
 ## Phase 2 
 - Deployed ADLS Gen2 storage (bronze/silver/gold containers), Key Vault (RBAC-mode), Azure SQL serverless (Entra-only auth) via Bicep, region adjusted for PAYG subscription restrictions (SQL + Function App on 'westus2', rest on 'eastus')
 - [IngestionFunctions](./IngestionFunctions) - Python Function App (v2 model on Linux Consumption plan), system-assigned MI, zero connection strings
-    - 'AlphaVantageIngest' - timer-triggered daily, pulls Alpha Vantage daily OHLCV, lands raw JSON in 'bronze/AlphaVantage/' blob storage
-    - 'bronze_to_silver' - cleans raw JSON into structured OHLCV using pandas, lands Parquet in 'silver/AlphaVantage/'
-    - 'silver_to_gold' - computes SMA/RSI/volatility from silver, writes to 'gold/AlphaVantage/technical_indicators.parquet' and Azure SQL (Entra auth, no passwords)
+    - Ingests a watchlist of 14 tickers (AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, IBM, JPM, V, WMT, DIS, KO, NFLX). The pipeline maintains the data in SQL where
+    - 'AlphaVantageIngest' - timer-triggered daily, loops through the ticker list to retrieve symbols OHLC, lands raw JSON in 'bronze/AlphaVantage/' blob storage
+    - 'bronze_to_silver' - cleans raw JSON into structured OHLCV using pandas, lands Parquet in 'silver/AlphaVantage/{ticker}'
+    - 'silver_to_gold' - computes SMA/RSI/volatility from silver, writes to 'gold/AlphaVantage/{ticker}_technical_indicators.parquet' and Azure SQL (Entra auth, no passwords)
+    - Data lake organization: one Parquet file per symbol at each layer. The SQL serving table is a single 'Technical_indicators' table with all symbols stacked with primary key bring Symbol and Stock_date
     - Full RBAC permissions given using least privilege principle: Blob/Queue/Table Data Contributor, Key Vault Secrets User, Monitoring Metrics Publisher, all scoped to the Function App's MI. SQL access granted via 'CREATE USER ... FROM EXTERNAL PROVIDER' + db_datawriter/db_datareader roles
     - Storage connection string auto-generated via 'listKeys()' and stored as a Key Vault secret. Its being referenced by the app via '@Microsoft.KeyVault(SecretUri=...)' so no raw secrets on the resource itself
 
-## Phase 3 
+## Phase 3 - frontend dashboard rebuild in progress (proper charts, multi ticker fix, AI panel)
 - [Web](./src/web) React + TypeScript frontend scaffolded with Vite
     - Symbol search box (controlled input), error handling, and a formatted table of prices, RSI, and volatility
     - MSAL wired in for Microsoft login (loginRedirect + PKCE flow), acquires access tokens and sends them as Bearer tokens on API requests
