@@ -103,7 +103,24 @@ async def getSymbol(symbol: str, user = Depends(validate_token)):
         raise HTTPException(status_code=404, detail=data["error"])
     return data
 
-
+# For charting and getting all data back or for whenever client wants it back 
+@app.get("/market/{symbol}/history")
+async def getHistory(symbol: str, start: str = None, end: str = None, user = Depends(validate_token)):
+    with get_conn() as conn:
+        cursor = conn.cursor()
+        if start and end:
+            cursor.execute(
+                "SELECT * FROM Technical_indicators WHERE Symbol = ? AND Stock_date BETWEEN ? AND ? ORDER BY Stock_date ASC", symbol, start, end
+            )
+        else:
+            cursor.execute(
+                "SELECT * FROM Technical_indicators WHERE Symbol = ? ORDER BY Stock_date ASC", symbol
+            )
+        rows = cursor.fetchall()
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"No data for {symbol}")
+        titles = [t[0] for t in cursor.description]
+        return [dict(zip(titles, row)) for row in rows]
 
 
 # AI ENDPOINTS
@@ -127,9 +144,9 @@ tools = [
     }
 ]
 
-# AI calls 
+# AI Endpoints 
 @app.get("/advice/brief/{symbol}")
-async def aiClient(symbol: str):
+async def aiClient(symbol: str, user = Depends(validate_token)):
 
     data = get_metrics(symbol)
     if "error" in data:
@@ -160,7 +177,7 @@ async def aiClient(symbol: str):
     }
 
 @app.get("/advice/ask/{question}")
-async def askAdvice(question: str):
+async def askAdvice(question: str, user = Depends(validate_token)):
 
     messages = [
         {"role": "system", "content": "You are a financial data assistant. Use the getMetrics function to fetch data when you need it. Describe technical posture using standard conventions. Only ever give the metrics available via get_metrics. Never invent numbers or give buy/sell advice."},
@@ -186,7 +203,10 @@ async def askAdvice(question: str):
                 "content": json.dumps(data, default=str)  # error dict gets sent to GPT too
             })
     else:
-        return response_message.content
+        return {
+            "answer": response_message.content,
+            "disclaimer": "This is an automated technical summary, not financial advice."
+        }
 
     # second call. GPT now has the data, writes the final answer
     final_response = getChatResp(client, messages)

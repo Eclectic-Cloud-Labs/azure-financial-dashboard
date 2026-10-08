@@ -52,3 +52,6 @@ React/TypeScript single-page application (SPA) for the Findash dashboard. Displa
 - 'no_account_error': 'acquireTokenSilent' needs an explicit account reference - fixed by passing 'instance.getActiveAccount() || instance.getAllAccounts()[0]'
 - 'authority_mismatch': token request authority didn't match the login authority - fixed by explicitly passing 'msalConfig.auth.authority' in the silent token request
 - Audience mismatch (401 from own API): token's 'aud' claim is 'api://62599e34-...' (the Application ID URI) but validation was checking against the bare client ID '62599e34-...' - fixed by matching the full 'api://' prefixed URI in auth.py
+
+
+added npm install recharts
