@@ -20,6 +20,8 @@ param funcStorageName= 'gurbofuncstorageaccount'
 param keyVaultName = 'gurboVault'
 param secretName = 'storageConnectionString'
 
+
+
 // sql server params
 param sqlServerName = 'gurbosSqlServer'
 param sqlDatabaseName = 'gurbosSqlDb'
@@ -49,3 +51,11 @@ param aiModelDeploymentName = 'gpt-5-mini'
 param aiCdn = 'gurbosopenai'
 param aiCapacity = 10
 
+// APIM
+param apimName = 'gurbosAPIM'
+param aksIngressHost = '40.121.118.182'
+param entraTenantId = '87e450d8-9ee3-4538-a4b3-3cb61e605824'
+param apiAppClientId = '62599e34-c893-4653-92c2-218aeb8c3741'
+
+// swa
+param swaName = 'findash-swa'
