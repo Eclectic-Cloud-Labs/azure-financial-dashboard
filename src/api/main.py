@@ -13,7 +13,7 @@ from azure.keyvault.secrets import SecretClient
 
 
 def load_apim_key():
-    kv_url = os.getenv("https://gurboVault.vault.azure.net")   # e.g. 
+    kv_url = os.getenv("KEY_VAULT_URL")
     if not kv_url:
         return None
     cred = DefaultAzureCredential()
@@ -33,9 +33,6 @@ app.add_middleware(
     allow_headers = ["*"]
 )
 
-
-
-APIM_SHARED_KEY = os.getenv("APIM_SHARED_KEY")   # populated from Key Vault at pod startup
 
 @app.middleware("http")
 async def require_apim_header(request: Request, call_next):

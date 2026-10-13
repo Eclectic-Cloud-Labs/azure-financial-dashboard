@@ -84,7 +84,7 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2024-05-01' = 
         <base />
         <cors allow-credentials="false">
           <allowed-origins>
-            <origin>https://findash-swa.azurestaticapps.net</origin>
+            <origin>https://blue-sand-0d706770f.4.azurestaticapps.net</origin>
             <origin>http://localhost:5173</origin>
           </allowed-origins>
           <allowed-methods>
@@ -209,7 +209,7 @@ resource nvSharedKey 'Microsoft.ApiManagement/service/namedValues@2024-05-01' = 
       secretIdentifier: apimAksSharedKeySecretUri
     }
   }
-  dependsOn:[
+  dependsOn: [
     apimKvRole
   ]
 }
@@ -226,10 +226,12 @@ resource apimKvRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   properties: {
     principalId: service.identity.principalId
     principalType: 'ServicePrincipal'
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '4633458b-17de-408a-b874-0445c86b69e6'
+    )
   }
 }
-
 
 output apimName string = service.name
 output apimPrincipalId string = service.identity.principalId
