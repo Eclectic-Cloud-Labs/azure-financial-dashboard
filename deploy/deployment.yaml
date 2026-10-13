@@ -20,8 +20,12 @@ spec:
     spec:
       serviceAccountName: findash-api-sa
       containers:
-        - name: findash-api-container    # name of the container inside the pod
-          image: gurboscontainerregistry.azurecr.io/findash-api:latest      # Docker image to pull from ACR
+        - name: findash-api-container
+          image: gurboscontainerregistry.azurecr.io/findash-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
+          env:
+            - name: KEY_VAULT_URL
+              value: "https://gurbovault.vault.azure.net"
+        

@@ -5,6 +5,7 @@ import { loginRequest } from './authConfig'
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 const COMPARE_COLORS = ['#e74c3c', '#1abc9c', '#9b59b6', '#f39c12', '#3498db']
+const API_BASE = import.meta.env.VITE_API_URL
 
 function App() {
   const [data, setData] = useState<any>(null)
@@ -53,7 +54,7 @@ function App() {
   const getData = async () => {
     if (!symbol) return
     const token = await getToken()
-    const response = await fetch(`http://127.0.0.1:8000/market/${symbol}`, {
+    const response = await fetch(`${API_BASE}/market/${symbol}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     if (!response.ok) {
@@ -63,7 +64,7 @@ function App() {
       return
     }
     setData(await response.json())
-    const response2 = await fetch(`http://127.0.0.1:8000/market/${symbol}/history`, {
+    const response2 = await fetch(`${API_BASE}market/${symbol}/history`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     setHistory(await response2.json())
@@ -74,7 +75,7 @@ function App() {
     if (!data?.Symbol) return
     setBriefLoading(true)
     const accessToken = await getToken()
-    const res = await fetch(`http://127.0.0.1:8000/advice/brief/${data.Symbol}`, {
+    const res = await fetch(`${API_BASE}/advice/brief/${data.Symbol}`, {
       headers: { Authorization: `Bearer ${accessToken}` }
     })
     const resData = await res.json()
@@ -96,7 +97,7 @@ function App() {
     setInput("")
     setChatLoading(true)
     const accessToken = await getToken()
-    const res = await fetch(`http://127.0.0.1:8000/advice/ask/${encodeURIComponent(fullQ)}`, {
+    const res = await fetch(`${API_BASE}/advice/ask/${encodeURIComponent(fullQ)}`, {
       headers: { Authorization: `Bearer ${accessToken}` }
     })
     const answer = await res.json()
@@ -119,7 +120,7 @@ function App() {
     const sym = compareInput.trim().toUpperCase()
     if (!sym || draftCompareSymbols.includes(sym) || sym === data?.Symbol) return
     const token = await getToken()
-    const res = await fetch(`http://127.0.0.1:8000/market/${sym}/history`, {
+    const res = await fetch(`${API_BASE}market/${sym}/history`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     if (!res.ok) {

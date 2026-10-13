@@ -4,3 +4,4 @@ pyodbc
 azure-identity
 python-jose[cryptography]
 openai
+azure-keyvault-secrets

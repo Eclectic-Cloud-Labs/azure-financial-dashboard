@@ -1,13 +1,26 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import struct
 import pyodbc
 import time
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from auth import validate_token
 import openai
 import json
+import os
+from azure.keyvault.secrets import SecretClient
 
+
+def load_apim_key():
+    kv_url = os.getenv("https://gurboVault.vault.azure.net")   # e.g. 
+    if not kv_url:
+        return None
+    cred = DefaultAzureCredential()
+    client = SecretClient(vault_url=kv_url, credential=cred)
+    return client.get_secret("apim-aks-shared-key").value
+
+APIM_SHARED_KEY = load_apim_key()
 ## LOCAL TESTING ##
 # import asyncio
 
@@ -19,6 +32,20 @@ app.add_middleware(
     allow_methods = ["*"],
     allow_headers = ["*"]
 )
+
+
+
+APIM_SHARED_KEY = os.getenv("APIM_SHARED_KEY")   # populated from Key Vault at pod startup
+
+@app.middleware("http")
+async def require_apim_header(request: Request, call_next):
+    # allow health checks and docs without the header
+    if request.url.path in ("/", "/docs", "/openapi.json"):
+        return await call_next(request)
+    sent = request.headers.get("X-APIM-Trusted")
+    if not APIM_SHARED_KEY or sent != APIM_SHARED_KEY:
+        return JSONResponse(status_code=403, content={"detail": "Direct access forbidden. Use the APIM gateway."})
+    return await call_next(request)
 
 def get_conn():
     SQL_COPT_SS_ACCESS_TOKEN = 1256

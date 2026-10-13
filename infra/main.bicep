@@ -17,6 +17,8 @@ param funcStorageName string
 // KeyVault Params
 param keyVaultName string
 param secretName string
+@secure()
+param apimAksSharedKeyValue string
 
 // sql server params
 param sqlServerName string 
@@ -50,7 +52,14 @@ param aiCdn string
 param aiModelDeploymentName string
 param aiCapacity int
 
+// APIM
+param apimName string
+param aksIngressHost string
+param entraTenantId string
+param apiAppClientId string
 
+// swa
+param swaName string
 
 
 
@@ -114,6 +123,8 @@ module vault 'modules/security/keyvault.bicep' = {
     keyVaultLocation: location
     secretName: secretName
     funcStorageName: funcStorageName
+    apimAksSharedKeyValue: apimAksSharedKeyValue
+    podIdentityPrincipalId: userAsgIdentity.outputs.principalId
   }
   dependsOn: [
     storageAccount
@@ -182,6 +193,34 @@ module ai './modules/ai/openai.bicep' = {
     modeldeploymentname: aiModelDeploymentName
     capacity: aiCapacity
     podIdentityPrincipalId: userAsgIdentity.outputs.principalId
+  }
+}
+
+module apim 'modules/gateway/apim.bicep' = {
+  name: apimName
+  scope: resourceGroup(newRG.name)
+  params: {
+    apimName: apimName
+    location: location
+    publisherEmail: 'gurvir-k@hotmail.com'
+    publisherName: 'turbo'
+    aksIngressHost: aksIngressHost
+    entraTenantId: entraTenantId
+    apiAppClientId: apiAppClientId
+    keyVaultName: keyVaultName
+    apimAksSharedKeySecretUri: vault.outputs.apimAksSharedKeySecretUri
+  }
+}
+
+module defender 'modules/security/defender.bicep' = {
+  name: 'defenderCspm'
+}
+
+module swa 'modules/compute/staticwebapp.bicep' = {
+  name: swaName
+  scope: resourceGroup(newRG.name)
+  params: {
+    swaName: swaName
   }
 }
 
