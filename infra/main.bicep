@@ -18,7 +18,7 @@ param funcStorageName string
 param keyVaultName string
 param secretName string
 @secure()
-param apimAksSharedKeyValue string
+param apimAksSharedKeyValue string = ''
 
 // sql server params
 param sqlServerName string 

@@ -23,8 +23,7 @@ build/
 .env
 .env.*
 !.env.example
-*.bicepparam
-infra/main.dev.bicepparam
+infra/*.local.bicepparam
 
 # Editor / OS
 
