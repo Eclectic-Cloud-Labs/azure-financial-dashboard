@@ -5,7 +5,7 @@ import { loginRequest } from './authConfig'
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 const COMPARE_COLORS = ['#e74c3c', '#1abc9c', '#9b59b6', '#f39c12', '#3498db']
-const API_BASE = import.meta.env.VITE_API_URL
+const API_BASE = import.meta.env.VITE_API_URL || 'https://gurbosapim.azure-api.net/v1'
 
 function App() {
   const [data, setData] = useState<any>(null)
@@ -64,7 +64,7 @@ function App() {
       return
     }
     setData(await response.json())
-    const response2 = await fetch(`${API_BASE}market/${symbol}/history`, {
+    const response2 = await fetch(`${API_BASE}/market/${symbol}/history`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     setHistory(await response2.json())
@@ -120,7 +120,7 @@ function App() {
     const sym = compareInput.trim().toUpperCase()
     if (!sym || draftCompareSymbols.includes(sym) || sym === data?.Symbol) return
     const token = await getToken()
-    const res = await fetch(`${API_BASE}market/${sym}/history`, {
+    const res = await fetch(`${API_BASE}/market/${sym}/history`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     if (!res.ok) {
