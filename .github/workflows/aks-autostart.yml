@@ -1,0 +1,33 @@
+name: AKS Auto-Start
+
+on:
+  schedule:
+    # 13:00 UTC = 7am MDT (summer) / 6am MST (winter)
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Start AKS cluster
+        run: |
+          STATE=$(az aks show -g rgFindashDev -n findash-aks-dev --query powerState.code -o tsv)
+          echo "Current power state: $STATE"
+          if [ "$STATE" = "Stopped" ]; then
+            az aks start -g rgFindashDev -n findash-aks-dev
+            echo "Cluster started."
+          else
+            echo "Cluster already running, nothing to do."
+          fi
