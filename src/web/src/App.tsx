@@ -40,6 +40,8 @@ function App() {
   const [draftShowRSI, setDraftShowRSI] = useState(false)
   const [draftShowVolatility, setDraftShowVolatility] = useState(false)
   const [compareInput, setCompareInput] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [page, setPage] = useState<'home' | 'about' | 'clients'>('home')
 
   const { instance } = useMsal()
   const isAuthenticated = useIsAuthenticated()
@@ -53,22 +55,27 @@ function App() {
 
   const getData = async () => {
     if (!symbol) return
-    const token = await getToken()
-    const response = await fetch(`${API_BASE}/market/${symbol}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    if (!response.ok) {
-      setData(null)
-      setHistory([])
-      setError("Please enter valid symbol")
-      return
+    setLoading(true)
+    try{
+      const token = await getToken()
+      const response = await fetch(`${API_BASE}/market/${symbol}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!response.ok) {
+        setData(null)
+        setHistory([])
+        setError("Please enter valid symbol")
+        return
+      }
+      setData(await response.json())
+      const response2 = await fetch(`${API_BASE}/market/${symbol}/history`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setHistory(await response2.json())
+      setError("")
+    } finally {
+      setLoading(false)
     }
-    setData(await response.json())
-    const response2 = await fetch(`${API_BASE}/market/${symbol}/history`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    setHistory(await response2.json())
-    setError("")
   }
 
   const openAI = async () => {
@@ -192,6 +199,28 @@ function App() {
 
   const useSecondaryAxis = showRSI || showVolatility
 
+  const [selectedClient, setSelectedClient] = useState<any>(null)
+const [portfolioBrief, setPortfolioBrief] = useState<string>("")
+const [portfolioLoading, setPortfolioLoading] = useState(false)
+
+const generatePortfolioBrief = async (client: any) => {
+  setPortfolioLoading(true)
+  setPortfolioBrief("")
+  const token = await getToken()
+  const briefs: string[] = []
+  for (const sym of client.portfolio) {
+    const res = await fetch(`${API_BASE}/advice/brief/${sym}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (res.ok) {
+      const d = await res.json()
+      briefs.push(`**${sym}**: ${d.brief}`)
+    }
+  }
+  setPortfolioBrief(briefs.join('\n\n'))
+  setPortfolioLoading(false)
+}
+
   const rows = [
     { label: "Symbol", value: data?.Symbol },
     { label: "Date", value: data ? new Date(data.Stock_date).toLocaleDateString() : "" },
@@ -206,6 +235,32 @@ function App() {
     { label: "RSI 14", value: data ? data.rsi.toFixed(2) : "" },
     { label: "Volatility", value: data ? (data.volatility * 100).toFixed(2) + "%" : "" }
   ]
+  const SAMPLE_CLIENTS = [
+  {
+    id: 'c1',
+    name: 'Sarah Chen',
+    riskProfile: 'Conservative',
+    portfolio: ['AAPL', 'MSFT', 'JPM']
+  },
+  {
+    id: 'c2',
+    name: 'Marcus Johnson',
+    riskProfile: 'Moderate',
+    portfolio: ['GOOGL', 'AMZN', 'V', 'DIS']
+  },
+  {
+    id: 'c3',
+    name: 'Priya Patel',
+    riskProfile: 'Aggressive',
+    portfolio: ['TSLA', 'NVDA', 'META']
+  },
+  {
+    id: 'c4',
+    name: 'Robert Williams',
+    riskProfile: 'Conservative',
+    portfolio: ['KO', 'WMT', 'JPM']
+  }
+]
 
   return (
     <>
@@ -213,6 +268,7 @@ function App() {
         <div className="nav-left">
           <a className={page === 'home' ? 'active' : ''} onClick={() => setPage('home')}>Home</a>
           <a className={page === 'about' ? 'active' : ''} onClick={() => setPage('about')}>About</a>
+          <a className={page === 'clients' ? 'active' : ''} onClick={() => setPage('clients')}>Clients</a>
         </div>
         <div className="nav-right">
           <button
@@ -270,6 +326,37 @@ function App() {
 
               <p className="about-link"><a href="https://github.com/Eclectic-Cloud-Labs" target="_blank" rel="noreferrer">github.com/Eclectic-Cloud-Labs</a></p>
             </div>
+          ) : page === 'clients' ? (
+            <div className="clients">
+              <h2>Clients</h2>
+              <p className="demo-note">Demo mode: sample client data. Real client CRUD + role-based filtering deferred to v2.</p>
+              <div className="client-list">
+                {SAMPLE_CLIENTS.map(c => (
+                  <div key={c.id} className="client-card" onClick={() => { setSelectedClient(c); setPortfolioBrief("") }}>
+                    <div className="client-name">{c.name}</div>
+                    <div className="client-risk">{c.riskProfile}</div>
+                    <div className="client-holdings">{c.portfolio.join(', ')}</div>
+                  </div>
+                ))}
+              </div>
+
+              {selectedClient && (
+                <div className="client-detail">
+                  <h3>{selectedClient.name} — {selectedClient.riskProfile}</h3>
+                  <p>Holdings: {selectedClient.portfolio.join(', ')}</p>
+                  <button onClick={() => generatePortfolioBrief(selectedClient)} disabled={portfolioLoading}>
+                    {portfolioLoading ? "Generating..." : "Generate Portfolio Brief"}
+                  </button>
+                  {portfolioBrief && (
+                    <div className="portfolio-brief">
+                      {portfolioBrief.split('\n\n').map((line, i) => (
+                        <p key={i}>{line}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           ) : !hasSearched ? (
             <div className="hero">
               <input
@@ -279,6 +366,7 @@ function App() {
                 onKeyDown={(e) => { if (e.key === "Enter") getData() }}
               />
               <button type="button" onClick={getData}>Search</button>
+              {loading && <p className="loading">Loading...</p>}
               {error && <p className="error">{error}</p>}
             </div>
           ) : (
@@ -344,7 +432,7 @@ function App() {
                 </div>
                 <div className="spacer" />
               </div>
-
+              {loading && <p className="loading">Loading...</p>}
               {error && <p className="error">{error}</p>}
 
               <div className="chart-wrap">

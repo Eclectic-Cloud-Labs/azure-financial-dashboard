@@ -10,7 +10,16 @@ import openai
 import json
 import os
 from azure.keyvault.secrets import SecretClient
+import os, struct, pyodbc, time, openai, json, logging
 
+from azure.monitor.opentelemetry import configure_azure_monitor
+
+APPINSIGHTS_CONN = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+if APPINSIGHTS_CONN:
+    configure_azure_monitor(connection_string=APPINSIGHTS_CONN)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def load_apim_key():
     kv_url = os.getenv("KEY_VAULT_URL")
@@ -193,6 +202,17 @@ async def aiClient(symbol: str, user = Depends(validate_token)):
     client = aiSetup()
     response = getChatResp(client, msg)
     
+    # observability metrics
+    usage = response.usage
+    logger.info("ai_tokens_used", extra={
+        "endpoint": "advice_brief",
+        "symbol": symbol,
+        "prompt_tokens": usage.prompt_tokens,
+        "completion_tokens": usage.completion_tokens,
+        "total_tokens": usage.total_tokens,
+    })
+    
+    
     return {
         "symbol": symbol,
         "as_of": data['Stock_date'],
@@ -234,6 +254,18 @@ async def askAdvice(question: str, user = Depends(validate_token)):
 
     # second call. GPT now has the data, writes the final answer
     final_response = getChatResp(client, messages)
+    
+    # observability metrics
+    usage = final_response.usage
+    logger.info("ai_tokens_used", extra={
+        "custom_dimensions": {
+            "endpoint": "advice_ask",
+            "prompt_tokens": usage.prompt_tokens,
+            "completion_tokens": usage.completion_tokens,
+            "total_tokens": usage.total_tokens,
+        }
+    })
+    
     return {
     "answer": final_response.choices[0].message.content,
     "disclaimer": "This is an automated technical summary, not financial advice."

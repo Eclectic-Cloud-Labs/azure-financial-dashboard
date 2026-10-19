@@ -5,3 +5,4 @@ azure-identity
 python-jose[cryptography]
 openai
 azure-keyvault-secrets
+azure-monitor-opentelemetry

@@ -100,8 +100,10 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2024-05-01' = 
           <openid-config url="https://login.microsoftonline.com/{{tenant-id}}/v2.0/.well-known/openid-configuration" />
           <audiences>
             <audience>api://{{api-app-client-id}}</audience>
+            <audience>{{api-app-client-id}}</audience>
           </audiences>
           <issuers>
+            <issuer>https://sts.windows.net/{{tenant-id}}/</issuer>
             <issuer>https://login.microsoftonline.com/{{tenant-id}}/v2.0</issuer>
           </issuers>
         </validate-jwt>

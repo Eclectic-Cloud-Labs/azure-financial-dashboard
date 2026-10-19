@@ -28,4 +28,5 @@ spec:
           env:
             - name: KEY_VAULT_URL
               value: "https://gurbovault.vault.azure.net"
-        
+            - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+              value: "InstrumentationKey=b13cd01d-1f63-4121-a905-a7d5d84e20b7;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/;ApplicationId=825b2a5b-21bb-43cc-9bf0-9f6be628dbdb"

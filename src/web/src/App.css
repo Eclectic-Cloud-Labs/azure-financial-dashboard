@@ -198,7 +198,8 @@ table {
   max-width: 600px;
 }
 
-table th, table td {
+table th,
+table td {
   padding: 0.5rem 1rem;
   text-align: left;
   border-bottom: 1px solid #2a2a30;
@@ -378,7 +379,7 @@ table th {
   padding: 1rem;
   min-width: 260px;
   z-index: 60;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
 }
 
 .filter-panel h3 {
@@ -581,4 +582,102 @@ table th {
 
 .about-link a:hover {
   text-decoration: underline;
+}
+
+.loading {
+  color: #8884d8;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.clients {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+.demo-note {
+  color: #888;
+  font-style: italic;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.client-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.client-card {
+  background: #1a1a22;
+  border: 1px solid #2a2a30;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.client-card:hover {
+  border-color: #8884d8;
+}
+
+.client-name {
+  color: #fff;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.client-risk {
+  color: #8884d8;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.client-holdings {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.client-detail {
+  background: #1a1a22;
+  border: 1px solid #2a2a30;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.client-detail h3 {
+  color: #fff;
+  margin: 0 0 0.5rem 0;
+}
+
+.client-detail button {
+  background: #8884d8;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 1rem 0;
+}
+
+.portfolio-brief {
+  color: #ccc;
+  line-height: 1.5;
+}
+
+.portfolio-brief p {
+  margin-bottom: 0.75rem;
 }
