@@ -1,16 +1,11 @@
+import os, struct, pyodbc, time, openai, json, logging
 from fastapi import FastAPI, Request, HTTPException, Depends
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-import struct
-import pyodbc
-import time
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from auth import validate_token
-import openai
-import json
-import os
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.keyvault.secrets import SecretClient
-import os, struct, pyodbc, time, openai, json, logging
+from azure.monitor.opentelemetry import configure_azure_monitor
+from auth import validate_token
 
 from azure.monitor.opentelemetry import configure_azure_monitor
 
@@ -258,12 +253,10 @@ async def askAdvice(question: str, user = Depends(validate_token)):
     # observability metrics
     usage = final_response.usage
     logger.info("ai_tokens_used", extra={
-        "custom_dimensions": {
-            "endpoint": "advice_ask",
-            "prompt_tokens": usage.prompt_tokens,
-            "completion_tokens": usage.completion_tokens,
-            "total_tokens": usage.total_tokens,
-        }
+        "endpoint": "advice_ask",
+        "prompt_tokens": usage.prompt_tokens,
+        "completion_tokens": usage.completion_tokens,
+        "total_tokens": usage.total_tokens,
     })
     
     return {

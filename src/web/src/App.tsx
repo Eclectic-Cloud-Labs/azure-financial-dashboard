@@ -7,13 +7,40 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } f
 const COMPARE_COLORS = ['#e74c3c', '#1abc9c', '#9b59b6', '#f39c12', '#3498db']
 const API_BASE = import.meta.env.VITE_API_URL || 'https://gurbosapim.azure-api.net/v1'
 
+const SAMPLE_CLIENTS = [
+  {
+    id: 'c1',
+    name: 'Sarah Chen',
+    riskProfile: 'Conservative',
+    portfolio: ['AAPL', 'MSFT', 'JPM']
+  },
+  {
+    id: 'c2',
+    name: 'Marcus Johnson',
+    riskProfile: 'Moderate',
+    portfolio: ['GOOGL', 'AMZN', 'V', 'DIS']
+  },
+  {
+    id: 'c3',
+    name: 'Priya Patel',
+    riskProfile: 'Aggressive',
+    portfolio: ['TSLA', 'NVDA', 'META']
+  },
+  {
+    id: 'c4',
+    name: 'Robert Williams',
+    riskProfile: 'Conservative',
+    portfolio: ['KO', 'WMT', 'JPM']
+  }
+]
+
+
 function App() {
   const [data, setData] = useState<any>(null)
   const [symbol, setSymbol] = useState<string>("")
   const [error, setError] = useState<string>("")
   const [history, setHistory] = useState<any[]>([])
   const [pinnedKey, setPinnedKey] = useState<string | undefined>(undefined)
-  const [page, setPage] = useState<'home' | 'about'>('home')
   const [showAI, setShowAI] = useState(false)
   const [brief, setBrief] = useState<string>("")
   const [briefLoading, setBriefLoading] = useState(false)
@@ -42,6 +69,10 @@ function App() {
   const [compareInput, setCompareInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState<'home' | 'about' | 'clients'>('home')
+  const [selectedClient, setSelectedClient] = useState<any>(null)
+  const [portfolioBrief, setPortfolioBrief] = useState<string>("")
+  const [portfolioLoading, setPortfolioLoading] = useState(false)
+
 
   const { instance } = useMsal()
   const isAuthenticated = useIsAuthenticated()
@@ -199,27 +230,24 @@ function App() {
 
   const useSecondaryAxis = showRSI || showVolatility
 
-  const [selectedClient, setSelectedClient] = useState<any>(null)
-const [portfolioBrief, setPortfolioBrief] = useState<string>("")
-const [portfolioLoading, setPortfolioLoading] = useState(false)
 
-const generatePortfolioBrief = async (client: any) => {
-  setPortfolioLoading(true)
-  setPortfolioBrief("")
-  const token = await getToken()
-  const briefs: string[] = []
-  for (const sym of client.portfolio) {
-    const res = await fetch(`${API_BASE}/advice/brief/${sym}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    if (res.ok) {
-      const d = await res.json()
-      briefs.push(`**${sym}**: ${d.brief}`)
+  const generatePortfolioBrief = async (client: any) => {
+    setPortfolioLoading(true)
+    setPortfolioBrief("")
+    const token = await getToken()
+    const briefs: string[] = []
+    for (const sym of client.portfolio) {
+      const res = await fetch(`${API_BASE}/advice/brief/${sym}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const d = await res.json()
+        briefs.push(`**${sym}**: ${d.brief}`)
+      }
     }
+    setPortfolioBrief(briefs.join('\n\n'))
+    setPortfolioLoading(false)
   }
-  setPortfolioBrief(briefs.join('\n\n'))
-  setPortfolioLoading(false)
-}
 
   const rows = [
     { label: "Symbol", value: data?.Symbol },
@@ -235,33 +263,7 @@ const generatePortfolioBrief = async (client: any) => {
     { label: "RSI 14", value: data ? data.rsi.toFixed(2) : "" },
     { label: "Volatility", value: data ? (data.volatility * 100).toFixed(2) + "%" : "" }
   ]
-  const SAMPLE_CLIENTS = [
-  {
-    id: 'c1',
-    name: 'Sarah Chen',
-    riskProfile: 'Conservative',
-    portfolio: ['AAPL', 'MSFT', 'JPM']
-  },
-  {
-    id: 'c2',
-    name: 'Marcus Johnson',
-    riskProfile: 'Moderate',
-    portfolio: ['GOOGL', 'AMZN', 'V', 'DIS']
-  },
-  {
-    id: 'c3',
-    name: 'Priya Patel',
-    riskProfile: 'Aggressive',
-    portfolio: ['TSLA', 'NVDA', 'META']
-  },
-  {
-    id: 'c4',
-    name: 'Robert Williams',
-    riskProfile: 'Conservative',
-    portfolio: ['KO', 'WMT', 'JPM']
-  }
-]
-
+  
   return (
     <>
       <nav className="navbar">
