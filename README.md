@@ -1,7 +1,7 @@
 # Findash - AI Financial Insights Dashboard
 End to end React dashboard providing information about public investment markets and client profiles with AI insights. Created with Bicep IaC from day one. 
 
-**Business Application:** a tool for financial advisors. Advisors manage clients and their portfolios with AI generating reports based on  holdings and risk. Users are abke to see stock information and indicators as well. 
+**Business Application:** a tool for financial advisors. Advisors manage clients and their portfolios with AI generating reports based on  holdings and risk. Users are able to see stock information and indicators as well. 
 
 Live demo: https://blue-sand-0d706770f.4.azurestaticapps.net (sign-in by invite)
 
